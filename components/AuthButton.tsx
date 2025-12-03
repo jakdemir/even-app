@@ -23,11 +23,11 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
 
     return (
         <IDKitWidget
-            app_id={process.env.NEXT_PUBLIC_APP_ID as `app_${string}`} // must be an app_id from Developer Portal
-            action="login" // must match the action name in Developer Portal
+            app_id={process.env.NEXT_PUBLIC_APP_ID as `app_${string}`}
+            action="login"
             onSuccess={handleVerify}
-            handleVerify={handleVerify} // Optional: verify proof in backend
-            verification_level={VerificationLevel.Device} // Device level is faster/easier for testing
+            handleVerify={handleVerify}
+            verification_level={VerificationLevel.Device} // Use 'Device' for Simulator testing
         >
             {({ open }) => (
                 <button
