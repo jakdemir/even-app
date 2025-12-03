@@ -141,7 +141,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
         // Realtime subscription filtered by group_id
         const channel = supabase
-            .channel(`expenses_channel_${groupId}`)
+            .channel(`expenses_channel_${groupId}_${Date.now()}`) // Unique channel name
             .on(
                 'postgres_changes',
                 {
@@ -151,6 +151,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
                     filter: `group_id=eq.${groupId}`
                 },
                 (payload) => {
+                    console.log("Realtime event received:", payload);
                     const newExpense = parseExpense(payload.new);
                     setExpenses((prev) => {
                         // Deduplicate: if we already have this ID (e.g. from addExpense), don't add again
@@ -161,9 +162,12 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
                     });
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log(`Subscription status for group ${groupId}:`, status);
+            });
 
         return () => {
+            console.log(`Unsubscribing from group ${groupId}`);
             supabase.removeChannel(channel);
         };
     }, [groupId]);

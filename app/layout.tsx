@@ -5,6 +5,7 @@ import MiniKitProvider from "@/components/MiniKitProvider";
 import ErudaProvider from "@/components/ErudaProvider";
 import { ExpenseProvider } from "@/contexts/ExpenseContext";
 import { cn } from "@/lib/utils";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +24,10 @@ export default function RootLayout({
       <body className={cn(inter.className, "bg-background text-foreground")}>
         <MiniKitProvider>
           <ExpenseProvider>
-            <ErudaProvider>{children}</ErudaProvider>
+            <ErudaProvider>
+              {children}
+              <SpeedInsights />
+            </ErudaProvider>
           </ExpenseProvider>
         </MiniKitProvider>
       </body>
