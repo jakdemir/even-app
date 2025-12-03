@@ -8,9 +8,10 @@ import AuthButton from "@/components/AuthButton";
 import { Expense } from "@/types";
 
 import JoinGroupForm from "@/components/JoinGroupForm";
+import SetUsernameForm from "@/components/SetUsernameForm";
 
 export default function Home() {
-  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup } = useExpenses();
+  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup, displayName, updateDisplayName } = useExpenses();
   const isAuthenticated = !!currentUser;
   const [recipientAddress, setRecipientAddress] = useState("");
 
@@ -21,7 +22,7 @@ export default function Home() {
 
   const handleAddExpense = (expense: Omit<Expense, "id" | "date" | "group_id">) => {
     // If payer is "Me", replace with currentUser address if available
-    const payer = expense.payer === "Me" && currentUser ? currentUser : expense.payer;
+    const payer = expense.payer === "Me" && displayName ? displayName : (expense.payer === "Me" ? (currentUser || "Me") : expense.payer);
     addExpense({ ...expense, payer });
   };
 
@@ -37,7 +38,7 @@ export default function Home() {
   // or map the address to "Me".
 
   // Let's update the calculation to check against currentUser OR "Me" (legacy mock).
-  const isMe = (payer: string) => payer === "Me" || payer === currentUser;
+  const isMe = (payer: string) => payer === "Me" || payer === currentUser || payer === displayName;
 
   let netBalance = 0;
   expenses.forEach(e => {
@@ -69,7 +70,7 @@ export default function Home() {
     addExpense({
       description: "Payment",
       amount: Math.abs(netBalance),
-      payer: currentUser || "Me",
+      payer: displayName || currentUser || "Me",
       type: 'payment'
     });
     setRecipientAddress("");
@@ -95,6 +96,17 @@ export default function Home() {
     );
   }
 
+  if (!displayName) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 max-w-md mx-auto">
+        <header className="w-full flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Even</h1>
+        </header>
+        <SetUsernameForm onSetUsername={updateDisplayName} />
+      </main>
+    );
+  }
+
   if (!groupId) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 max-w-md mx-auto">
@@ -102,7 +114,7 @@ export default function Home() {
           <h1 className="text-2xl font-bold tracking-tight">Even</h1>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground font-mono">
-              {currentUser?.slice(0, 6)}...{currentUser?.slice(-4)}
+              {displayName}
             </span>
           </div>
         </header>
@@ -119,11 +131,11 @@ export default function Home() {
           <span className="text-xs text-muted-foreground">Group: {groupId}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground font-mono">
-            {currentUser?.slice(0, 6)}...{currentUser?.slice(-4)}
+          <span className="text-xs text-muted-foreground font-medium">
+            {displayName}
           </span>
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-sm font-bold">JD</span>
+            <span className="text-sm font-bold">{displayName.slice(0, 2).toUpperCase()}</span>
           </div>
         </div>
       </header>

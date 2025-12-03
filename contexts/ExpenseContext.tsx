@@ -7,8 +7,10 @@ import { supabase } from "@/lib/supabase";
 interface ExpenseContextType {
     expenses: Expense[];
     currentUser: string | null;
+    displayName: string | null;
     groupId: string | null;
     login: (address: string) => void;
+    updateDisplayName: (name: string) => void;
     joinGroup: (groupId: string) => void;
     addExpense: (expense: Omit<Expense, "id" | "date" | "group_id">) => void;
     clearExpenses: () => void;
@@ -20,29 +22,58 @@ const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 export function ExpenseProvider({ children }: { children: ReactNode }) {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [currentUser, setCurrentUser] = useState<string | null>(null);
+    const [displayName, setDisplayNameState] = useState<string | null>(null);
     const [groupId, setGroupId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     // Load user and group from LocalStorage on mount
     useEffect(() => {
         const storedUser = localStorage.getItem("even_user");
+        const storedName = localStorage.getItem("even_name");
         const storedGroup = localStorage.getItem("even_group");
         if (storedUser) setCurrentUser(storedUser);
+        if (storedName) setDisplayNameState(storedName);
         if (storedGroup) setGroupId(storedGroup);
     }, []);
 
     // Save user/group to LocalStorage
     useEffect(() => {
         if (currentUser) localStorage.setItem("even_user", currentUser);
+        if (displayName) localStorage.setItem("even_name", displayName);
         if (groupId) localStorage.setItem("even_group", groupId);
-    }, [currentUser, groupId]);
+    }, [currentUser, displayName, groupId]);
 
     const login = async (address: string) => {
         setCurrentUser(address);
+
+        // Fetch existing profile
+        const { data, error } = await supabase
+            .from('users')
+            .select('display_name')
+            .eq('wallet_address', address)
+            .single();
+
+        if (data?.display_name) {
+            setDisplayNameState(data.display_name);
+        } else {
+            // Create initial record if not exists
+            const { error: upsertError } = await supabase
+                .from('users')
+                .upsert({ wallet_address: address }, { onConflict: 'wallet_address' });
+            if (upsertError) console.error('Error creating user:', upsertError);
+        }
+    };
+
+    const updateDisplayName = async (name: string) => {
+        if (!currentUser) return;
+        setDisplayNameState(name);
+
         const { error } = await supabase
             .from('users')
-            .upsert({ wallet_address: address }, { onConflict: 'wallet_address' });
-        if (error) console.error('Error creating user:', error);
+            .update({ display_name: name })
+            .eq('wallet_address', currentUser);
+
+        if (error) console.error('Error updating name:', error);
     };
 
     const joinGroup = (id: string) => {
@@ -139,14 +170,16 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
     const clearExpenses = () => {
         setCurrentUser(null);
+        setDisplayNameState(null);
         setGroupId(null);
         localStorage.removeItem("even_user");
+        localStorage.removeItem("even_name");
         localStorage.removeItem("even_group");
         setExpenses([]);
     };
 
     return (
-        <ExpenseContext.Provider value={{ expenses, currentUser, groupId, login, joinGroup, addExpense, clearExpenses, isLoading }}>
+        <ExpenseContext.Provider value={{ expenses, currentUser, displayName, groupId, login, updateDisplayName, joinGroup, addExpense, clearExpenses, isLoading }}>
             {children}
         </ExpenseContext.Provider>
     );

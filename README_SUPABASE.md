@@ -19,6 +19,7 @@ Go to the SQL Editor in your Supabase dashboard and run the following SQL to cre
 -- Create a table for users (optional, but good for profiles)
 create table if not exists public.users (
   wallet_address text primary key,
+  display_name text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
