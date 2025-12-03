@@ -19,7 +19,9 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
         if (!MiniKit.isInstalled()) {
             console.warn("MiniKit not installed. Using Mock Login.");
             setTimeout(() => {
-                onSuccess("0xMockUserAddress123456789");
+                // Generate random mock address for testing multiple users
+                const randomMock = "0x" + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+                onSuccess(randomMock);
                 setLoading(false);
             }, 1000);
             return;
