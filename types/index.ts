@@ -5,4 +5,5 @@ export interface Expense {
     payer: string;
     date: string;
     type: 'expense' | 'payment';
+    group_id: string;
 }

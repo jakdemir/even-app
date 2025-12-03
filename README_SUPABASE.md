@@ -28,6 +28,7 @@ create table if not exists public.expenses (
   description text not null,
   amount numeric not null,
   payer text not null, -- stores the wallet address
+  group_id text not null, -- allows multiple groups/rooms
   date timestamp with time zone default timezone('utc'::text, now()) not null,
   type text default 'expense', -- 'expense' or 'payment'
   created_at timestamp with time zone default timezone('utc'::text, now()) not null

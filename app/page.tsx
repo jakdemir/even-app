@@ -7,8 +7,10 @@ import SettleUpButton from "@/components/SettleUpButton";
 import AuthButton from "@/components/AuthButton";
 import { Expense } from "@/types";
 
+import JoinGroupForm from "@/components/JoinGroupForm";
+
 export default function Home() {
-  const { expenses, addExpense, currentUser, login, isLoading } = useExpenses();
+  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup } = useExpenses();
   const isAuthenticated = !!currentUser;
   const [recipientAddress, setRecipientAddress] = useState("");
 
@@ -17,7 +19,7 @@ export default function Home() {
     login(address);
   };
 
-  const handleAddExpense = (expense: Omit<Expense, "id" | "date">) => {
+  const handleAddExpense = (expense: Omit<Expense, "id" | "date" | "group_id">) => {
     // If payer is "Me", replace with currentUser address if available
     const payer = expense.payer === "Me" && currentUser ? currentUser : expense.payer;
     addExpense({ ...expense, payer });
@@ -93,10 +95,29 @@ export default function Home() {
     );
   }
 
+  if (!groupId) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 max-w-md mx-auto">
+        <header className="w-full flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Even</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-mono">
+              {currentUser?.slice(0, 6)}...{currentUser?.slice(-4)}
+            </span>
+          </div>
+        </header>
+        <JoinGroupForm onJoin={joinGroup} />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen p-4 pb-20 space-y-6 max-w-md mx-auto">
       <header className="flex items-center justify-between py-4">
-        <h1 className="text-2xl font-bold tracking-tight">Even</h1>
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-bold tracking-tight">Even</h1>
+          <span className="text-xs text-muted-foreground">Group: {groupId}</span>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground font-mono">
             {currentUser?.slice(0, 6)}...{currentUser?.slice(-4)}

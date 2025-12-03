@@ -7,8 +7,10 @@ import { supabase } from "@/lib/supabase";
 interface ExpenseContextType {
     expenses: Expense[];
     currentUser: string | null;
+    groupId: string | null;
     login: (address: string) => void;
-    addExpense: (expense: Omit<Expense, "id" | "date">) => void;
+    joinGroup: (groupId: string) => void;
+    addExpense: (expense: Omit<Expense, "id" | "date" | "group_id">) => void;
     clearExpenses: () => void;
     isLoading: boolean;
 }
@@ -18,43 +20,114 @@ const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 export function ExpenseProvider({ children }: { children: ReactNode }) {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [currentUser, setCurrentUser] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [groupId, setGroupId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // Load user from LocalStorage on mount
+    // Load user and group from LocalStorage on mount
     useEffect(() => {
         const storedUser = localStorage.getItem("even_user");
-        if (storedUser) {
-            setCurrentUser(storedUser);
-        }
+        const storedGroup = localStorage.getItem("even_group");
+        if (storedUser) setCurrentUser(storedUser);
+        if (storedGroup) setGroupId(storedGroup);
     }, []);
 
-    // Fetch expenses from Supabase
+    // Save user/group to LocalStorage
     useEffect(() => {
+        if (currentUser) localStorage.setItem("even_user", currentUser);
+        if (groupId) localStorage.setItem("even_group", groupId);
+    }, [currentUser, groupId]);
+
+    const login = async (address: string) => {
+        setCurrentUser(address);
+        const { error } = await supabase
+            .from('users')
+            .upsert({ wallet_address: address }, { onConflict: 'wallet_address' });
+        if (error) console.error('Error creating user:', error);
+    };
+
+    const joinGroup = (id: string) => {
+        setGroupId(id);
+        setExpenses([]); // Clear previous expenses when switching groups
+    };
+
+    const addExpense = async (newExpense: Omit<Expense, "id" | "date" | "group_id">) => {
+        if (!groupId) return;
+
+        const expenseData = {
+            ...newExpense,
+            group_id: groupId,
+            date: new Date().toISOString(),
+        };
+
+        const { data, error } = await supabase
+            .from('expenses')
+            .insert([expenseData])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error adding expense:', error);
+            return;
+        }
+
+        if (data) {
+            const createdExpense = {
+                ...data,
+                amount: Number(data.amount)
+            } as Expense;
+
+            setExpenses((prev) => [createdExpense, ...prev]);
+        }
+    };
+
+    // Helper to safely parse expense from DB/Realtime
+    const parseExpense = (data: any): Expense => ({
+        ...data,
+        amount: Number(data.amount)
+    });
+
+    // Fetch expenses from Supabase when groupId changes
+    useEffect(() => {
+        if (!groupId) return;
+
         const fetchExpenses = async () => {
             setIsLoading(true);
             const { data, error } = await supabase
                 .from('expenses')
                 .select('*')
+                .eq('group_id', groupId)
                 .order('date', { ascending: false });
 
             if (error) {
                 console.error('Error fetching expenses:', error);
             } else if (data) {
-                setExpenses(data as Expense[]);
+                setExpenses(data.map(parseExpense));
             }
             setIsLoading(false);
         };
 
         fetchExpenses();
 
-        // Realtime subscription
+        // Realtime subscription filtered by group_id
         const channel = supabase
-            .channel('expenses_channel')
+            .channel(`expenses_channel_${groupId}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'expenses' },
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'expenses',
+                    filter: `group_id=eq.${groupId}`
+                },
                 (payload) => {
-                    setExpenses((prev) => [payload.new as Expense, ...prev]);
+                    const newExpense = parseExpense(payload.new);
+                    setExpenses((prev) => {
+                        // Deduplicate: if we already have this ID (e.g. from addExpense), don't add again
+                        if (prev.some(e => e.id === newExpense.id)) {
+                            return prev;
+                        }
+                        return [newExpense, ...prev];
+                    });
                 }
             )
             .subscribe();
@@ -62,51 +135,18 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
-
-    // Save user to LocalStorage whenever state changes
-    useEffect(() => {
-        if (currentUser) {
-            localStorage.setItem("even_user", currentUser);
-        }
-    }, [currentUser]);
-
-    const login = async (address: string) => {
-        setCurrentUser(address);
-        // Upsert user to Supabase
-        const { error } = await supabase
-            .from('users')
-            .upsert({ wallet_address: address }, { onConflict: 'wallet_address' });
-
-        if (error) console.error('Error creating user:', error);
-    };
-
-    const addExpense = async (newExpense: Omit<Expense, "id" | "date">) => {
-        const expenseData = {
-            ...newExpense,
-            date: new Date().toISOString(),
-        };
-
-        const { error } = await supabase
-            .from('expenses')
-            .insert([expenseData]);
-
-        if (error) {
-            console.error('Error adding expense:', error);
-        }
-        // No need to manually update state here because the realtime subscription will catch it
-        // However, for immediate feedback, we could optimistically update, but let's rely on realtime for now to ensure consistency
-    };
+    }, [groupId]);
 
     const clearExpenses = () => {
-        // For now, this just logs out the user locally
         setCurrentUser(null);
+        setGroupId(null);
         localStorage.removeItem("even_user");
-        // We don't clear expenses from DB here
+        localStorage.removeItem("even_group");
+        setExpenses([]);
     };
 
     return (
-        <ExpenseContext.Provider value={{ expenses, currentUser, login, addExpense, clearExpenses, isLoading }}>
+        <ExpenseContext.Provider value={{ expenses, currentUser, groupId, login, joinGroup, addExpense, clearExpenses, isLoading }}>
             {children}
         </ExpenseContext.Provider>
     );

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Expense } from "@/types";
 
 interface AddExpenseFormProps {
-    onAdd: (expense: Omit<Expense, "id" | "date">) => void;
+    onAdd: (expense: Omit<Expense, "id" | "date" | "group_id">) => void;
     className?: string;
 }
 
