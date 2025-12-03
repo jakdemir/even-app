@@ -1,30 +1,47 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Expense } from "@/types";
+import { Expense, Group } from "@/types";
 import { supabase } from "@/lib/supabase";
 
 interface ExpenseContextType {
     expenses: Expense[];
+    groups: Group[];
     currentUser: string | null;
     displayName: string | null;
     groupId: string | null;
     login: (address: string) => void;
     updateDisplayName: (name: string) => void;
-    joinGroup: (groupId: string) => void;
+    joinGroup: (groupId: string) => Promise<void>;
+    leaveGroup: () => void;
+    createGroup: (name: string) => Promise<string | null>;
+    updateGroup: (groupId: string, name: string) => Promise<void>;
+    deleteGroup: (groupId: string) => Promise<void>;
     addExpense: (expense: Omit<Expense, "id" | "date" | "group_id">) => void;
+    updateExpense: (expense: Expense) => Promise<void>;
+    deleteExpense: (expenseId: string) => Promise<void>;
     clearExpenses: () => void;
     isLoading: boolean;
+    participants: string[];
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 
 export function ExpenseProvider({ children }: { children: ReactNode }) {
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [groups, setGroups] = useState<Group[]>([]);
     const [currentUser, setCurrentUser] = useState<string | null>(null);
     const [displayName, setDisplayNameState] = useState<string | null>(null);
     const [groupId, setGroupId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [groupMembers, setGroupMembers] = useState<string[]>([]);
+
+    // Derived state: Unique participants (Group members + Current User + Display Name)
+    const participants = Array.from(new Set([
+        ...(displayName ? [displayName] : []),
+        ...(currentUser ? [currentUser] : []),
+        ...groupMembers
+    ])).filter(Boolean);
 
     // Load user and group from LocalStorage on mount
     useEffect(() => {
@@ -38,10 +55,45 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
     // Save user/group to LocalStorage
     useEffect(() => {
-        if (currentUser) localStorage.setItem("even_user", currentUser);
-        if (displayName) localStorage.setItem("even_name", displayName);
-        if (groupId) localStorage.setItem("even_group", groupId);
+        if (currentUser) {
+            localStorage.setItem("even_user", currentUser);
+        } else {
+            localStorage.removeItem("even_user");
+        }
+
+        if (displayName) {
+            localStorage.setItem("even_name", displayName);
+        } else {
+            localStorage.removeItem("even_name");
+        }
+
+        if (groupId) {
+            localStorage.setItem("even_group", groupId);
+        } else {
+            localStorage.removeItem("even_group");
+        }
     }, [currentUser, displayName, groupId]);
+
+    // Fetch user's groups
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const fetchGroups = async () => {
+            const { data, error } = await supabase
+                .from('group_members')
+                .select('group_id, groups(*)')
+                .eq('user_id', currentUser);
+
+            if (error) {
+                console.error('Error fetching groups:', error);
+            } else if (data) {
+                // @ts-ignore
+                setGroups(data.map(item => item.groups).filter(Boolean));
+            }
+        };
+
+        fetchGroups();
+    }, [currentUser]);
 
     const login = async (address: string) => {
         setCurrentUser(address);
@@ -76,9 +128,99 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         if (error) console.error('Error updating name:', error);
     };
 
-    const joinGroup = (id: string) => {
+    const createGroup = async (name: string) => {
+        if (!currentUser) return null;
+
+        // 1. Create Group
+        const { data: groupData, error: groupError } = await supabase
+            .from('groups')
+            .insert([{ name, created_by: currentUser }])
+            .select()
+            .single();
+
+        if (groupError || !groupData) {
+            console.error('Error creating group:', groupError);
+            return null;
+        }
+
+        // 2. Add Creator as Member
+        const { error: memberError } = await supabase
+            .from('group_members')
+            .insert([{ group_id: groupData.id, user_id: currentUser }]);
+
+        if (memberError) {
+            console.error('Error adding member:', memberError);
+        }
+
+        const newGroup = groupData as Group;
+        setGroups(prev => [...prev, newGroup]);
+        return newGroup.id;
+    };
+
+    const updateGroup = async (id: string, name: string) => {
+        const { error } = await supabase
+            .from('groups')
+            .update({ name })
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error updating group:', error);
+            return;
+        }
+
+        setGroups(prev => prev.map(g => g.id === id ? { ...g, name } : g));
+    };
+
+    const deleteGroup = async (id: string) => {
+        const { error } = await supabase
+            .from('groups')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting group:', error);
+            return;
+        }
+
+        setGroups(prev => prev.filter(g => g.id !== id));
+        if (groupId === id) setGroupId(null);
+    };
+
+    const joinGroup = async (id: string) => {
+        if (!currentUser) return;
+
+        // Check if already a member
+        const isMember = groups.some(g => g.id === id);
+        if (!isMember) {
+            const { error } = await supabase
+                .from('group_members')
+                .insert([{ group_id: id, user_id: currentUser }]);
+
+            if (error) {
+                console.error('Error joining group:', error);
+                // If error is duplicate key, it means we are already joined, which is fine
+            }
+
+            // Fetch the group details to add to state
+            const { data } = await supabase
+                .from('groups')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (data) {
+                setGroups(prev => [...prev, data as Group]);
+            }
+        }
+
         setGroupId(id);
         setExpenses([]); // Clear previous expenses when switching groups
+    };
+
+    const leaveGroup = () => {
+        setGroupId(null);
+        setExpenses([]);
+        setGroupMembers([]);
     };
 
     const addExpense = async (newExpense: Omit<Expense, "id" | "date" | "group_id">) => {
@@ -111,6 +253,40 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const updateExpense = async (updatedExpense: Expense) => {
+        const { error } = await supabase
+            .from('expenses')
+            .update({
+                description: updatedExpense.description,
+                amount: updatedExpense.amount,
+                payer: updatedExpense.payer,
+                recipient: updatedExpense.recipient,
+                type: updatedExpense.type
+            })
+            .eq('id', updatedExpense.id);
+
+        if (error) {
+            console.error('Error updating expense:', error);
+            return;
+        }
+
+        setExpenses(prev => prev.map(e => e.id === updatedExpense.id ? updatedExpense : e));
+    };
+
+    const deleteExpense = async (expenseId: string) => {
+        const { error } = await supabase
+            .from('expenses')
+            .delete()
+            .eq('id', expenseId);
+
+        if (error) {
+            console.error('Error deleting expense:', error);
+            return;
+        }
+
+        setExpenses(prev => prev.filter(e => e.id !== expenseId));
+    };
+
     // Helper to safely parse expense from DB/Realtime
     const parseExpense = (data: any): Expense => ({
         ...data,
@@ -137,11 +313,27 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
         };
 
+        const fetchGroupMembers = async () => {
+            const { data, error } = await supabase
+                .from('group_members')
+                .select('user_id, users(display_name)')
+                .eq('group_id', groupId);
+
+            if (error) {
+                console.error('Error fetching members:', error);
+            } else if (data) {
+                // Map to display names if available, else wallet addresses
+                const members = data.map((m: any) => m.users?.display_name || m.user_id);
+                setGroupMembers(members);
+            }
+        };
+
         fetchExpenses();
+        fetchGroupMembers();
 
         // Realtime subscription filtered by group_id
         const channel = supabase
-            .channel(`expenses_channel_${groupId}_${Date.now()}`) // Unique channel name
+            .channel(`room_${groupId}`) // Deterministic channel name
             .on(
                 'postgres_changes',
                 {
@@ -151,11 +343,12 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
                     filter: `group_id=eq.${groupId}`
                 },
                 (payload) => {
-                    console.log("Realtime event received:", payload);
+                    console.log("🔔 Realtime event received:", payload);
                     const newExpense = parseExpense(payload.new);
                     setExpenses((prev) => {
                         // Deduplicate: if we already have this ID (e.g. from addExpense), don't add again
                         if (prev.some(e => e.id === newExpense.id)) {
+                            console.log("Duplicate expense ignored:", newExpense.id);
                             return prev;
                         }
                         return [newExpense, ...prev];
@@ -163,7 +356,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
                 }
             )
             .subscribe((status) => {
-                console.log(`Subscription status for group ${groupId}:`, status);
+                console.log(`📡 Subscription status for room_${groupId}:`, status);
             });
 
         return () => {
@@ -183,7 +376,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <ExpenseContext.Provider value={{ expenses, currentUser, displayName, groupId, login, updateDisplayName, joinGroup, addExpense, clearExpenses, isLoading }}>
+        <ExpenseContext.Provider value={{ expenses, groups, currentUser, displayName, groupId, login, updateDisplayName, joinGroup, leaveGroup, createGroup, updateGroup, deleteGroup, addExpense, updateExpense, deleteExpense, clearExpenses, isLoading, participants }}>
             {children}
         </ExpenseContext.Provider>
     );

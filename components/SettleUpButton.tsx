@@ -6,43 +6,47 @@ import { cn } from "@/lib/utils";
 
 interface SettleUpButtonProps {
     amount: number;
-    recipientAddress: string;
+    recipient: string;
+    disabled?: boolean;
     className?: string;
     onPaymentSuccess?: () => void;
 }
 
-export default function SettleUpButton({ amount, recipientAddress, className, onPaymentSuccess }: SettleUpButtonProps) {
+export default function SettleUpButton({ amount, recipient, disabled, className, onPaymentSuccess }: SettleUpButtonProps) {
     const [loading, setLoading] = useState(false);
 
-    const handlePay = async () => {
+    const handleSettleUp = async () => {
+        if (disabled) return;
+
+        setLoading(true);
+
+        // Check if MiniKit is available
         if (!MiniKit.isInstalled()) {
-            console.warn("MiniKit not installed");
+            setLoading(false);
+            alert("World App MiniKit is not available. Please use 'Record Payment' to manually record your payment.");
             return;
         }
 
-        setLoading(true);
         try {
             const payload: PayCommandInput = {
                 reference: "settle-up-" + Date.now(),
-                to: recipientAddress,
+                to: recipient,
                 tokens: [
                     {
                         symbol: Tokens.WLD,
                         token_amount: amount.toString(),
                     },
                 ],
-                description: "Settling up expenses",
+                description: "Settle up on Even",
             };
 
-            const response = await MiniKit.commands.pay(payload);
-            console.log("Payment response:", response);
-            // Assuming response indicates success (MiniKit v2 might return something specific)
-            // For now, we assume if no error, it's initiated/successful.
-            if (response) {
+            const { finalPayload } = await MiniKit.commandsAsync.pay(payload);
+            if (finalPayload.status === "success") {
                 onPaymentSuccess?.();
             }
         } catch (error) {
-            console.error("Payment failed:", error);
+            console.error("Payment failed", error);
+            alert("Payment failed. Please try again or use 'Record Payment' to manually record your payment.");
         } finally {
             setLoading(false);
         }
@@ -50,14 +54,14 @@ export default function SettleUpButton({ amount, recipientAddress, className, on
 
     return (
         <button
-            onClick={handlePay}
-            disabled={loading}
+            onClick={handleSettleUp}
+            disabled={loading || disabled}
             className={cn(
-                "w-full py-3 px-4 bg-primary text-primary-foreground font-medium rounded-xl transition-all active:scale-95 disabled:opacity-50",
+                "flex items-center justify-center gap-2 py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-xl active:scale-95 transition-all disabled:opacity-50",
                 className
             )}
         >
-            {loading ? "Processing..." : `Settle Up $${amount.toFixed(2)}`}
+            {loading ? "Processing..." : "Settle Up"}
         </button>
     );
 }

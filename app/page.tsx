@@ -1,19 +1,37 @@
 "use client";
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { useExpenses } from "@/contexts/ExpenseContext";
 import ExpenseCard from "@/components/ExpenseCard";
 import AddExpenseForm from "@/components/AddExpenseForm";
-import SettleUpButton from "@/components/SettleUpButton";
 import AuthButton from "@/components/AuthButton";
+import SettleUpButton from "@/components/SettleUpButton";
+import JoinGroupForm from "@/components/JoinGroupForm";
+import GroupList from "@/components/GroupList";
+import SetUsernameForm from "@/components/SetUsernameForm";
+import ShareButton from "@/components/ShareButton";
+import GroupSettings from "@/components/GroupSettings";
+import SpendingSummary from "@/components/SpendingSummary";
+import RecordPaymentModal from "@/components/RecordPaymentModal";
+import { calculateDebts } from "@/lib/debt";
+import { cn } from "@/lib/utils";
 import { Expense } from "@/types";
 
-import JoinGroupForm from "@/components/JoinGroupForm";
-import SetUsernameForm from "@/components/SetUsernameForm";
-
 export default function Home() {
-  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup, displayName, updateDisplayName } = useExpenses();
+  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup, leaveGroup, displayName, updateDisplayName, participants, groups } = useExpenses();
   const isAuthenticated = !!currentUser;
-  const [recipientAddress, setRecipientAddress] = useState("");
+  const [debts, setDebts] = useState<import("@/lib/debt").Debt[]>([]);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  useEffect(() => {
+    // We use displayName as the identifier for "Me" in expenses if it exists
+    const myIdentifier = displayName || currentUser;
+    if (expenses.length > 0 && myIdentifier) {
+      setDebts(calculateDebts(expenses, myIdentifier));
+    } else {
+      setDebts([]);
+    }
+  }, [expenses, currentUser, displayName]);
 
   const handleLoginSuccess = (address: string) => {
     console.log("Login success, address:", address);
@@ -26,55 +44,17 @@ export default function Home() {
     addExpense({ ...expense, payer });
   };
 
-  // Simple logic: I owe half of what others paid, others owe half of what I paid.
-  // Net balance = (My payments / 2) - (Others payments / 2)
-  // If positive, I am owed. If negative, I owe.
+  const handleRecordPayment = (payment: Omit<Expense, "id" | "date" | "group_id">) => {
+    // Normalize payer/recipient if "Me" is selected
+    const payer = payment.payer === "Me" && displayName ? displayName : (payment.payer === "Me" ? (currentUser || "Me") : payment.payer);
+    const recipient = payment.recipient === "Me" && displayName ? displayName : (payment.recipient === "Me" ? (currentUser || "Me") : payment.recipient);
 
-  // NOTE: In a real app, "Me" should be the currentUser address.
-  // But for MVP, the mock data uses "Me". 
-  // We should align this. Let's assume currentUser is "Me" for calculation purposes 
-  // if the payer string matches, OR if we want to be robust, we should store payer as address.
-  // For now, let's keep the string "Me" for the user's own expenses in the UI form, 
-  // or map the address to "Me".
-
-  // Let's update the calculation to check against currentUser OR "Me" (legacy mock).
-  const isMe = (payer: string) => payer === "Me" || payer === currentUser || payer === displayName;
-
-  let netBalance = 0;
-  expenses.forEach(e => {
-    const amIPayer = isMe(e.payer);
-    // Default to 'expense' if type is missing (backward compatibility)
-    const type = e.type || 'expense';
-
-    if (type === 'payment') {
-      // Payment: 100% transfer
-      // If I paid, I get credit (+). If I received (someone else paid), I get debit (-).
-      // Wait, if someone else paid "Me", then they paid me.
-      // But here "payer" is the one who sent money.
-      // So if I am payer, I sent money. My debt decreases (or credit increases).
-      // If I am NOT payer, someone sent money. To whom?
-      // We assume payments are between the two parties involved in the balance.
-      // Since this is a simple view, we assume if I didn't pay, it was paid TO me.
-      if (amIPayer) netBalance += e.amount;
-      else netBalance -= e.amount;
-    } else {
-      // Expense: 50/50 split
-      if (amIPayer) netBalance += e.amount / 2;
-      else netBalance -= e.amount / 2;
-    }
-  });
-
-  const isOwed = netBalance >= 0;
-
-  const handlePaymentSuccess = () => {
-    addExpense({
-      description: "Payment",
-      amount: Math.abs(netBalance),
-      payer: displayName || currentUser || "Me",
-      type: 'payment'
-    });
-    setRecipientAddress("");
+    addExpense({ ...payment, payer, recipient });
+    setIsPaymentModalOpen(false);
   };
+
+  // Find current group name
+  const currentGroup = groups.find(g => g.id === groupId);
 
   if (isLoading) {
     return (
@@ -84,7 +64,7 @@ export default function Home() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!currentUser) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 text-center">
         <div>
@@ -109,7 +89,7 @@ export default function Home() {
 
   if (!groupId) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 max-w-md mx-auto">
+      <main className="min-h-screen flex flex-col p-6 space-y-8 max-w-md mx-auto">
         <header className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Even</h1>
           <div className="flex items-center gap-2">
@@ -118,71 +98,131 @@ export default function Home() {
             </span>
           </div>
         </header>
-        <JoinGroupForm onJoin={joinGroup} />
+        <GroupList />
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen p-4 pb-20 space-y-6 max-w-md mx-auto">
-      <header className="flex items-center justify-between py-4">
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-bold tracking-tight">Even</h1>
-          <span className="text-xs text-muted-foreground">Group: {groupId}</span>
+    <main className="min-h-screen flex flex-col p-4 max-w-md mx-auto pb-24">
+      {/* Header */}
+      <header className="flex items-center justify-between mb-6">
+        <div>
+          <button
+            onClick={leaveGroup}
+            className="text-xs font-medium text-muted-foreground hover:text-primary mb-1 flex items-center gap-1 transition-colors"
+          >
+            ← My Groups
+          </button>
+          <h1 className="text-2xl font-bold tracking-tight">{currentGroup?.name || "Even"}</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <ShareButton groupId={groupId!} />
+            <GroupSettings groupId={groupId!} groupName={currentGroup?.name || "Group"} />
+          </div>
         </div>
+
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground font-medium">
-            {displayName}
-          </span>
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-sm font-bold">{displayName.slice(0, 2).toUpperCase()}</span>
+          <div className="text-right">
+            <p className="text-sm font-medium">{displayName}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[100px]">{currentUser?.slice(0, 6)}...{currentUser?.slice(-4)}</p>
+          </div>
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            👤
           </div>
         </div>
       </header>
 
-      {/* Balance Card */}
-      <section className="p-6 bg-primary text-primary-foreground rounded-2xl shadow-lg">
-        <span className="text-sm opacity-80">{isOwed ? "You are owed" : "You owe"}</span>
-        <div className="text-4xl font-bold mt-1 mb-4">
-          ${Math.abs(netBalance).toFixed(2)}
-        </div>
-        {!isOwed && (
-          <div className="space-y-3 mt-4">
-            <input
-              type="text"
-              placeholder="Recipient Address (0x...)"
-              className="w-full p-2 rounded-lg bg-white/20 text-white placeholder:text-white/60 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 text-sm"
-              value={recipientAddress}
-              onChange={(e) => setRecipientAddress(e.target.value)}
-            />
-            <SettleUpButton
-              amount={Math.abs(netBalance)}
-              recipientAddress={recipientAddress}
-              className="bg-white text-black hover:bg-gray-100"
-              onPaymentSuccess={handlePaymentSuccess}
-            />
+      {/* Spending Summary */}
+      <SpendingSummary expenses={expenses} currentUser={currentUser!} displayName={displayName} />
+
+      {/* Settlement Plan (Debts) */}
+      <div className="mb-6 grid gap-3">
+        {debts.length > 0 ? (
+          debts.map((debt, i) => {
+            const isMeDebtor = debt.debtor === currentUser || debt.debtor === displayName;
+            const isMeCreditor = debt.creditor === currentUser || debt.creditor === displayName;
+
+            // Get display names for debtor and creditor
+            const debtorName = isMeDebtor ? "You" : (debt.debtor.length > 20 ? debt.debtor.slice(0, 8) + "..." : debt.debtor);
+            const creditorName = isMeCreditor ? "You" : (debt.creditor.length > 20 ? debt.creditor.slice(0, 8) + "..." : debt.creditor);
+
+            return (
+              <div key={i} className={cn(
+                "p-4 rounded-xl border flex items-center justify-between",
+                isMeDebtor ? "bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-900/50" :
+                  isMeCreditor ? "bg-green-50 border-green-100 dark:bg-green-900/20 dark:border-green-900/50" :
+                    "bg-card"
+              )}>
+                <div className="flex flex-col">
+                  <span className="font-medium">
+                    {debtorName} owes {creditorName}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {isMeDebtor ? "Tap 'Settle Up' to pay" : isMeCreditor ? "You are owed" : "Waiting for payment"}
+                  </span>
+                </div>
+                <span className={cn(
+                  "text-lg font-bold",
+                  isMeDebtor ? "text-red-600" : isMeCreditor ? "text-green-600" : ""
+                )}>
+                  ${debt.amount.toFixed(2)}
+                </span>
+              </div>
+            );
+          })
+        ) : (
+          <div className="p-4 rounded-xl bg-secondary/50 text-center text-muted-foreground text-sm">
+            All settled up! 🎉
           </div>
         )}
-      </section>
+      </div>
 
-      {/* Actions */}
-      <section>
-        <AddExpenseForm onAdd={handleAddExpense} />
-      </section>
+      {/* Action Buttons */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <SettleUpButton
+          amount={debts.find(d => d.debtor === currentUser || d.debtor === displayName)?.amount || 0}
+          recipient={debts.find(d => d.debtor === currentUser || d.debtor === displayName)?.creditor || ""}
+          disabled={!debts.some(d => d.debtor === currentUser || d.debtor === displayName)}
+        />
+        <button
+          className="flex items-center justify-center gap-2 py-3 px-4 bg-secondary text-secondary-foreground font-semibold rounded-xl active:scale-95 transition-all"
+          onClick={() => setIsPaymentModalOpen(true)}
+        >
+          💸 Record Payment
+        </button>
+      </div>
 
-      {/* Recent Activity */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Recent Activity</h2>
-        <div className="space-y-3">
-          {expenses.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center py-4">No expenses yet.</p>
-          ) : (
-            expenses.map((expense) => (
-              <ExpenseCard key={expense.id} expense={expense} />
-            ))
-          )}
-        </div>
-      </section>
+      {/* Expense List */}
+      <div className="space-y-4">
+        <h2 className="font-semibold text-lg">Recent Expenses</h2>
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        ) : expenses.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground bg-secondary/20 rounded-xl border-dashed border-2">
+            No expenses yet. Add one!
+          </div>
+        ) : (
+          expenses.map((expense) => (
+            <ExpenseCard
+              key={expense.id}
+              expense={expense}
+              isMe={expense.payer === currentUser || expense.payer === displayName}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Floating Add Button */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <AddExpenseForm onAdd={handleAddExpense} participants={participants} />
+      </div>
+
+      <RecordPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onRecord={handleRecordPayment}
+        participants={participants}
+      />
     </main>
   );
 }
