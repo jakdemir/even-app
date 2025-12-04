@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import { Expense, Group } from "@/types";
 import { supabase } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 interface ExpenseContextType {
     expenses: Expense[];
@@ -101,24 +102,24 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         if (!currentUser) return;
 
         const fetchGroups = async () => {
-            console.log("Fetching groups for user:", currentUser);
+            logger.dbQuery('SELECT', 'group_members', { user_id: currentUser });
             const { data, error } = await supabase
                 .from('group_members')
                 .select('group_id, groups(*)')
                 .eq('user_id', currentUser);
 
             if (error) {
-                console.error('Error fetching groups:', error);
+                logger.error('Error fetching groups', error);
             } else if (data) {
-                console.log("Raw groups data:", data);
+                logger.debug('Raw groups data received', { count: data.length });
                 // @ts-ignore
                 const groups = data.map(item => item.groups).filter(Boolean) as Group[];
                 // Sort by created_at descending (most recent first)
                 groups.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                console.log("Parsed groups:", groups);
+                logger.info('Groups loaded', { count: groups.length });
                 setGroups(groups);
             } else {
-                console.log("No groups data returned");
+                logger.warn('No groups data returned');
                 setGroups([]);
             }
         };
@@ -185,7 +186,10 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     const createGroup = async (name: string) => {
         if (!currentUser) return null;
 
+        logger.userAction('Create Group', { name, userId: currentUser });
+
         // 1. Create Group
+        logger.dbQuery('INSERT', 'groups', { name, created_by: currentUser });
         const { data: groupData, error: groupError } = await supabase
             .from('groups')
             .insert([{ name, created_by: currentUser }])
@@ -193,17 +197,25 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
             .single();
 
         if (groupError || !groupData) {
-            console.error('Error creating group:', groupError);
+            logger.error('Error creating group', groupError);
             return null;
         }
 
+        logger.info('Group created', { id: groupData.id, name: groupData.name });
+
         // 2. Add Creator as Member
+        logger.dbQuery('INSERT', 'group_members', {
+            group_id: groupData.id,
+            user_id: currentUser
+        });
         const { error: memberError } = await supabase
             .from('group_members')
             .insert([{ group_id: groupData.id, user_id: currentUser }]);
 
         if (memberError) {
-            console.error('Error adding member:', memberError);
+            logger.error('Error adding member', memberError);
+        } else {
+            logger.info('Creator added as group member');
         }
 
         const newGroup = groupData as Group;
@@ -280,11 +292,23 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     const addExpense = async (newExpense: Omit<Expense, "id" | "date" | "group_id">) => {
         if (!groupId) return;
 
+        logger.userAction('Add Expense', {
+            description: newExpense.description,
+            amount: newExpense.amount,
+            payer: newExpense.payer,
+            groupId
+        });
+
         const expenseData = {
             ...newExpense,
             group_id: groupId,
             date: new Date().toISOString(),
         };
+
+        logger.dbQuery('INSERT', 'expenses', {
+            group_id: groupId,
+            amount: newExpense.amount
+        });
 
         const { data, error } = await supabase
             .from('expenses')
@@ -293,7 +317,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
             .single();
 
         if (error) {
-            console.error('Error adding expense:', error);
+            logger.error('Error adding expense', error);
             return;
         }
 
@@ -303,6 +327,10 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
                 amount: Number(data.amount)
             } as Expense;
 
+            logger.info('Expense added successfully', {
+                id: createdExpense.id,
+                amount: createdExpense.amount
+            });
             setExpenses((prev) => [createdExpense, ...prev]);
         }
     };

@@ -3,6 +3,7 @@
 import { MiniKit } from "@worldcoin/minikit-js";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 interface AuthButtonProps {
     onSuccess: (address: string, username?: string) => void;
@@ -15,15 +16,17 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
     const handleWalletAuth = async () => {
         setLoading(true);
         try {
-            console.log("Starting wallet auth...");
+            logger.userAction('Wallet Auth Started');
 
             // Step 1: Get nonce from server
+            logger.apiCall('/api/nonce', 'GET');
             const res = await fetch(`/api/nonce`);
             const { nonce } = await res.json();
 
-            console.log("Nonce received:", nonce);
+            logger.info('Nonce received', { nonceLength: nonce?.length });
 
             // Step 2: Request wallet authentication from MiniKit
+            logger.debug('Calling MiniKit.commandsAsync.walletAuth');
             const { commandPayload, finalPayload } = await MiniKit.commandsAsync.walletAuth({
                 nonce: nonce,
                 requestId: '0',
@@ -32,16 +35,20 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
                 statement: 'Sign in to Even - Split expenses with friends',
             });
 
-            console.log("Wallet auth response:", { commandPayload, finalPayload });
+            logger.info('Wallet auth response received', {
+                status: finalPayload.status,
+                hasAddress: finalPayload.status === 'success' ? !!finalPayload.address : false
+            });
 
             // Step 3: Check for errors
             if (finalPayload.status === 'error') {
-                console.error("Wallet auth error:", finalPayload);
+                logger.error('Wallet auth error', finalPayload);
                 setLoading(false);
                 return;
             }
 
             // Step 4: Verify the signature on the server
+            logger.apiCall('/api/complete-siwe', 'POST');
             const verifyResponse = await fetch('/api/complete-siwe', {
                 method: 'POST',
                 headers: {
@@ -54,18 +61,25 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
             });
 
             const verifyResult = await verifyResponse.json();
-            console.log("Verification result:", verifyResult);
+            logger.apiResponse('/api/complete-siwe', verifyResponse.status, {
+                isValid: verifyResult.isValid
+            });
 
             if (verifyResult.isValid) {
                 const username = MiniKit.user?.username;
-                console.log("Login successful - Address:", verifyResult.address, "Username:", username);
+                logger.userAction('Login Successful', {
+                    address: verifyResult.address,
+                    username
+                });
                 onSuccess(verifyResult.address, username);
             } else {
-                console.error("Signature verification failed:", verifyResult.message);
+                logger.error('Signature verification failed', null, {
+                    message: verifyResult.message
+                });
                 setLoading(false);
             }
         } catch (error) {
-            console.error("Wallet authentication exception:", error);
+            logger.error('Wallet authentication exception', error);
             setLoading(false);
         }
     };
