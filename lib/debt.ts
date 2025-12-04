@@ -16,18 +16,39 @@ export interface Balance {
  * Uses a greedy algorithm to minimize the number of transactions.
  */
 export function calculateDebts(expenses: Expense[], currentUser: string): Debt[] {
-    // 1. Identify all participants (everyone who has paid + current user + recipients)
+    console.log("=== DEBT CALCULATION START ===");
+    console.log("Current user:", currentUser);
+    console.log("Expenses:", expenses);
+
+    // 1. Identify all participants (everyone who has paid + current user + recipients + people in splits)
     const participants = new Set<string>();
     participants.add(currentUser);
     expenses.forEach(e => {
         participants.add(e.payer);
         if (e.recipient) participants.add(e.recipient);
+        // Also add people from splits (for legacy data that might have "Me")
+        if (e.splits) {
+            Object.keys(e.splits).forEach(person => {
+                // Treat "Me" as the current user
+                if (person === "Me") {
+                    participants.add(currentUser);
+                } else {
+                    participants.add(person);
+                }
+            });
+        }
     });
 
     const users = Array.from(participants);
     const numUsers = users.length;
 
-    if (numUsers < 2) return [];
+    console.log("Participants:", users);
+    console.log("Number of users:", numUsers);
+
+    if (numUsers < 2) {
+        console.log("Less than 2 users, returning empty debts");
+        return [];
+    }
 
     // 2. Calculate Net Balances
     const balances: Record<string, number> = {};
@@ -41,16 +62,48 @@ export function calculateDebts(expenses: Expense[], currentUser: string): Debt[]
                 balances[expense.recipient] -= expense.amount;
             }
         } else {
-            // Shared Expense: Payer paid full amount. Cost is split equally among all.
-            const costPerPerson = expense.amount / numUsers;
+            // Shared Expense
+            // Determine who shares this expense
+            let sharers: string[];
 
-            // Payer gets back (Amount - TheirShare)
+            if (expense.splits && Object.keys(expense.splits).length > 0) {
+                // Use the splits field to determine who shares the expense
+                sharers = Object.keys(expense.splits);
+            } else {
+                // Default: split among all participants
+                sharers = users;
+            }
+
+            const numSharers = sharers.length;
+            if (numSharers === 0) return; // Skip if no sharers
+
+            // Payer paid the full amount
             balances[expense.payer] += expense.amount;
 
-            // Everyone (including payer) "pays" the cost
-            users.forEach(u => {
-                balances[u] -= costPerPerson;
-            });
+            // Calculate how much each sharer owes
+            if (expense.split_type === 'unequal' && expense.splits) {
+                // Unequal split by amounts
+                sharers.forEach(sharer => {
+                    const normalizedSharer = sharer === "Me" ? currentUser : sharer;
+                    const shareAmount = expense.splits![sharer] || 0;
+                    balances[normalizedSharer] -= shareAmount;
+                });
+            } else if (expense.split_type === 'percentage' && expense.splits) {
+                // Percentage split
+                sharers.forEach(sharer => {
+                    const normalizedSharer = sharer === "Me" ? currentUser : sharer;
+                    const percentage = expense.splits![sharer] || 0;
+                    const shareAmount = (expense.amount * percentage) / 100;
+                    balances[normalizedSharer] -= shareAmount;
+                });
+            } else {
+                // Equal split (default)
+                const costPerPerson = expense.amount / numSharers;
+                sharers.forEach(sharer => {
+                    const normalizedSharer = sharer === "Me" ? currentUser : sharer;
+                    balances[normalizedSharer] -= costPerPerson;
+                });
+            }
         }
     });
 
@@ -96,6 +149,12 @@ export function calculateDebts(expenses: Expense[], currentUser: string): Debt[]
         if (Math.abs(debtor.amount) < 0.01) i++;
         if (creditor.amount < 0.01) j++;
     }
+
+    console.log("Final balances:", balances);
+    console.log("Debtors:", debtors);
+    console.log("Creditors:", creditors);
+    console.log("Final debts:", debts);
+    console.log("=== DEBT CALCULATION END ===");
 
     return debts;
 }

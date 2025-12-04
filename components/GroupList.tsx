@@ -30,7 +30,7 @@ export default function GroupList() {
             <div className="grid gap-3">
                 {groups.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground bg-secondary/20 rounded-xl border-dashed border-2">
-                        <p>You don't have any groups yet.</p>
+                        <p>No groups yet.</p>
                         <p className="text-sm">Create one to start sharing expenses!</p>
                     </div>
                 ) : (

@@ -18,10 +18,23 @@ import { cn } from "@/lib/utils";
 import { Expense } from "@/types";
 
 export default function Home() {
-  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup, leaveGroup, displayName, updateDisplayName, participants, groups } = useExpenses();
+  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup, leaveGroup, displayName, updateDisplayName, participants, groups, clearExpenses } = useExpenses();
   const isAuthenticated = !!currentUser;
   const [debts, setDebts] = useState<import("@/lib/debt").Debt[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  // Handle invite link
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const inviteGroupId = params.get('invite');
+
+    if (inviteGroupId && currentUser && displayName && !groupId) {
+      console.log("Auto-joining group from invite:", inviteGroupId);
+      joinGroup(inviteGroupId);
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [currentUser, displayName, groupId, joinGroup]);
 
   useEffect(() => {
     // We use displayName as the identifier for "Me" in expenses if it exists
@@ -39,9 +52,21 @@ export default function Home() {
   };
 
   const handleAddExpense = (expense: Omit<Expense, "id" | "date" | "group_id">) => {
-    // If payer is "Me", replace with currentUser address if available
+    // If payer is "Me", replace with displayName
     const payer = expense.payer === "Me" && displayName ? displayName : (expense.payer === "Me" ? (currentUser || "Me") : expense.payer);
-    addExpense({ ...expense, payer });
+
+    // Replace "Me" in splits with displayName
+    let splits = expense.splits;
+    if (splits && displayName) {
+      const newSplits: Record<string, number> = {};
+      Object.entries(splits).forEach(([key, value]) => {
+        const newKey = key === "Me" ? displayName : key;
+        newSplits[newKey] = value;
+      });
+      splits = newSplits;
+    }
+
+    addExpense({ ...expense, payer, splits });
   };
 
   const handleRecordPayment = (payment: Omit<Expense, "id" | "date" | "group_id">) => {
@@ -81,6 +106,12 @@ export default function Home() {
       <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 max-w-md mx-auto">
         <header className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Even</h1>
+          <button
+            onClick={clearExpenses}
+            className="text-xs text-muted-foreground hover:text-primary underline"
+          >
+            Logout
+          </button>
         </header>
         <SetUsernameForm onSetUsername={updateDisplayName} />
       </main>
@@ -92,11 +123,12 @@ export default function Home() {
       <main className="min-h-screen flex flex-col p-6 space-y-8 max-w-md mx-auto">
         <header className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Even</h1>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-mono">
-              {displayName}
-            </span>
-          </div>
+          <button
+            onClick={clearExpenses}
+            className="text-xs text-muted-foreground hover:text-primary underline"
+          >
+            Logout
+          </button>
         </header>
         <GroupList />
       </main>
@@ -124,7 +156,6 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <div className="text-right">
             <p className="text-sm font-medium">{displayName}</p>
-            <p className="text-xs text-muted-foreground truncate max-w-[100px]">{currentUser?.slice(0, 6)}...{currentUser?.slice(-4)}</p>
           </div>
           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
             👤
@@ -133,7 +164,7 @@ export default function Home() {
       </header>
 
       {/* Spending Summary */}
-      <SpendingSummary expenses={expenses} currentUser={currentUser!} displayName={displayName} />
+      <SpendingSummary expenses={expenses} currentUser={currentUser!} displayName={displayName} debts={debts} />
 
       {/* Settlement Plan (Debts) */}
       <div className="mb-6 grid gap-3">
@@ -143,8 +174,8 @@ export default function Home() {
             const isMeCreditor = debt.creditor === currentUser || debt.creditor === displayName;
 
             // Get display names for debtor and creditor
-            const debtorName = isMeDebtor ? "You" : (debt.debtor.length > 20 ? debt.debtor.slice(0, 8) + "..." : debt.debtor);
-            const creditorName = isMeCreditor ? "You" : (debt.creditor.length > 20 ? debt.creditor.slice(0, 8) + "..." : debt.creditor);
+            const debtorName = debt.debtor.length > 20 ? debt.debtor.slice(0, 8) + "..." : debt.debtor;
+            const creditorName = debt.creditor.length > 20 ? debt.creditor.slice(0, 8) + "..." : debt.creditor;
 
             return (
               <div key={i} className={cn(
@@ -158,7 +189,7 @@ export default function Home() {
                     {debtorName} owes {creditorName}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {isMeDebtor ? "Tap 'Settle Up' to pay" : isMeCreditor ? "You are owed" : "Waiting for payment"}
+                    {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
                 <span className={cn(
@@ -214,7 +245,7 @@ export default function Home() {
 
       {/* Floating Add Button */}
       <div className="fixed bottom-6 right-6 z-40">
-        <AddExpenseForm onAdd={handleAddExpense} participants={participants} />
+        <AddExpenseForm onAdd={handleAddExpense} participants={participants} currentUserName={displayName || undefined} />
       </div>
 
       <RecordPaymentModal
@@ -222,6 +253,7 @@ export default function Home() {
         onClose={() => setIsPaymentModalOpen(false)}
         onRecord={handleRecordPayment}
         participants={participants}
+        currentUserName={displayName || undefined}
       />
     </main>
   );

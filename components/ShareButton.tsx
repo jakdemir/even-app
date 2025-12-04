@@ -12,13 +12,17 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
     const [copied, setCopied] = useState(false);
 
     const handleShare = async () => {
+        // Create invite URL with group ID
+        const baseUrl = window.location.origin;
+        const inviteUrl = `${baseUrl}?invite=${groupId}`;
+
         const shareData = {
             title: 'Join my Even Group',
-            text: `Join my expense group on Even! Group ID: ${groupId}`,
-            url: window.location.href,
+            text: `Join my expense group on Even!`,
+            url: inviteUrl,
         };
 
-        console.log("Attempting to share...");
+        console.log("Attempting to share invite:", inviteUrl);
 
         // Try native share first
         if (navigator.share && navigator.canShare(shareData)) {
@@ -31,9 +35,9 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
             }
         }
 
-        // Fallback to clipboard
+        // Fallback to clipboard - copy the invite URL
         try {
-            await navigator.clipboard.writeText(groupId);
+            await navigator.clipboard.writeText(inviteUrl);
             console.log("Clipboard copy successful");
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
@@ -41,7 +45,7 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
             console.error("Failed to copy", err);
             // Fallback for non-secure contexts or older browsers
             const textArea = document.createElement("textarea");
-            textArea.value = groupId;
+            textArea.value = inviteUrl;
             document.body.appendChild(textArea);
             textArea.select();
             try {
@@ -50,7 +54,7 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
                 setTimeout(() => setCopied(false), 2000);
             } catch (e) {
                 console.error("Fallback copy failed", e);
-                alert(`Group ID: ${groupId}`);
+                alert(`Invite link: ${inviteUrl}`);
             }
             document.body.removeChild(textArea);
         }

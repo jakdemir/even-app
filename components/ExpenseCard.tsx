@@ -11,7 +11,7 @@ interface ExpenseCardProps {
 
 export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
     const isPayment = expense.type === 'payment';
-    const { updateExpense, deleteExpense, participants } = useExpenses();
+    const { updateExpense, deleteExpense, participants, displayName } = useExpenses();
     const [isEditing, setIsEditing] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -50,7 +50,7 @@ export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
                             {expense.description}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                            {isPayment ? "Payment" : `Paid by ${isMe ? "You" : expense.payer}`}
+                            {isPayment ? "Payment" : `Paid by ${expense.payer}`}
                         </span>
                     </div>
                 </div>
@@ -88,6 +88,7 @@ export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
                 onAdd={handleUpdate}
                 initialData={expense}
                 participants={participants}
+                currentUserName={displayName || undefined}
             />
 
             {/* Delete Confirmation Modal */}
@@ -96,7 +97,7 @@ export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
                     <div className="bg-background w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 duration-300">
                         <h3 className="font-bold text-xl mb-2">Delete Expense?</h3>
                         <p className="text-muted-foreground mb-6">
-                            Are you sure you want to delete "{expense.description}"? This action cannot be undone.
+                            Delete "{expense.description}"? This action cannot be undone.
                         </p>
                         <div className="flex gap-3">
                             <button

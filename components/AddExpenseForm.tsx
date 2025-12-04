@@ -1,29 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Expense } from "@/types";
 
 interface AddExpenseFormProps {
     onAdd: (expense: Omit<Expense, "id" | "date" | "group_id">) => void;
     participants?: string[];
+    currentUserName?: string;
     className?: string;
     initialData?: Expense;
     isOpen?: boolean;
     onClose?: () => void;
 }
 
-export default function AddExpenseForm({ onAdd, participants = [], className, initialData, isOpen: controlledIsOpen, onClose }: AddExpenseFormProps) {
+export default function AddExpenseForm({ onAdd, participants = [], currentUserName = "Me", className, initialData, isOpen: controlledIsOpen, onClose }: AddExpenseFormProps) {
     const [description, setDescription] = useState(initialData?.description || "");
     const [amount, setAmount] = useState(initialData?.amount.toString() || "");
-    const [payer, setPayer] = useState(initialData?.payer || "Me");
+    const [payer, setPayer] = useState(initialData?.payer || currentUserName);
     const [splitType, setSplitType] = useState<'equal' | 'unequal' | 'percentage'>(initialData?.split_type || 'equal');
     const [currency, setCurrency] = useState(initialData?.currency || 'USD');
-    const [isRecurring, setIsRecurring] = useState(initialData?.is_recurring || false);
-    const [recurrencePattern, setRecurrencePattern] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>(initialData?.recurrence_pattern || 'monthly');
     const [customSplits, setCustomSplits] = useState<Record<string, string>>(initialData?.splits ? Object.fromEntries(Object.entries(initialData.splits).map(([k, v]) => [k, v.toString()])) : {});
-    const [isCustomPayer, setIsCustomPayer] = useState(false);
     const [internalIsOpen, setInternalIsOpen] = useState(false);
+    // Initialize with all participants selected by default
+    const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
 
     const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
     const setIsOpen = (open: boolean) => {
@@ -47,15 +47,24 @@ export default function AddExpenseForm({ onAdd, participants = [], className, in
             currency,
         };
 
-        if (splitType !== 'equal' && Object.keys(customSplits).length > 0) {
+        // Determine who shares this expense
+        const participantsToSplit = selectedParticipants.length > 0 ? selectedParticipants : uniqueParticipants;
+
+        if (splitType === 'unequal' && Object.keys(customSplits).length > 0) {
+            // For unequal split, use the custom splits (amounts)
             expenseData.splits = Object.fromEntries(
                 Object.entries(customSplits).map(([k, v]) => [k, parseFloat(v) || 0])
             );
-        }
-
-        if (isRecurring) {
-            expenseData.is_recurring = true;
-            expenseData.recurrence_pattern = recurrencePattern;
+        } else if (splitType === 'percentage' && Object.keys(customSplits).length > 0) {
+            // For percentage split, use the custom splits (percentages)
+            expenseData.splits = Object.fromEntries(
+                Object.entries(customSplits).map(([k, v]) => [k, parseFloat(v) || 0])
+            );
+        } else {
+            // For equal split (or fallback), store participants with equal shares
+            expenseData.splits = Object.fromEntries(
+                participantsToSplit.map(p => [p, parseFloat(amount) / participantsToSplit.length])
+            );
         }
 
         onAdd(expenseData);
@@ -63,18 +72,24 @@ export default function AddExpenseForm({ onAdd, participants = [], className, in
         if (!initialData) {
             setDescription("");
             setAmount("");
-            setPayer("Me");
+            setPayer(currentUserName);
             setSplitType('equal');
             setCurrency('USD');
-            setIsRecurring(false);
             setCustomSplits({});
-            setIsCustomPayer(false);
+            setSelectedParticipants([]);
         }
         setIsOpen(false);
     };
 
-    // Ensure "Me" is always first, then unique sorted participants
-    const uniqueParticipants = Array.from(new Set(["Me", ...participants])).filter(p => p !== "Me").sort();
+    // Ensure current user is always first, then unique sorted participants
+    const uniqueParticipants = [currentUserName, ...Array.from(new Set(participants)).filter(p => p !== currentUserName).sort()];
+
+    // Initialize selectedParticipants with all participants when modal opens
+    useEffect(() => {
+        if (isOpen && selectedParticipants.length === 0) {
+            setSelectedParticipants(uniqueParticipants);
+        }
+    }, [isOpen, uniqueParticipants.length]);
 
     // If controlled by parent (isOpen prop provided), don't show the floating button
     if (controlledIsOpen !== undefined && !isOpen) {
@@ -152,6 +167,75 @@ export default function AddExpenseForm({ onAdd, participants = [], className, in
                         </select>
                     </div>
 
+                    {/* Paid By */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Paid By</label>
+                        <div className="flex flex-wrap gap-2">
+                            {uniqueParticipants.map(p => (
+                                <button
+                                    key={p}
+                                    type="button"
+                                    onClick={() => setPayer(p)}
+                                    className={cn(
+                                        "px-4 py-2 rounded-full text-sm font-medium transition-all",
+                                        payer === p
+                                            ? "bg-primary text-primary-foreground shadow-md scale-105"
+                                            : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
+                                    )}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Paid For - Who shares this expense (Checkboxes) */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Paid For</label>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (selectedParticipants.length === uniqueParticipants.length) {
+                                        setSelectedParticipants([]);
+                                    } else {
+                                        setSelectedParticipants(uniqueParticipants);
+                                    }
+                                }}
+                                className="text-xs text-primary hover:underline"
+                            >
+                                {selectedParticipants.length === uniqueParticipants.length ? 'Deselect All' : 'Select All'}
+                            </button>
+                        </div>
+                        <div className="space-y-2 bg-secondary/20 p-3 rounded-xl">
+                            {uniqueParticipants.map(p => (
+                                <label
+                                    key={p}
+                                    className="flex items-center gap-3 cursor-pointer hover:bg-secondary/30 p-2 rounded-lg transition-colors"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedParticipants.includes(p)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedParticipants([...selectedParticipants, p]);
+                                            } else {
+                                                setSelectedParticipants(selectedParticipants.filter(x => x !== p));
+                                            }
+                                        }}
+                                        className="w-4 h-4 rounded border-2 border-primary text-primary focus:ring-2 focus:ring-primary/20"
+                                    />
+                                    <span className="text-sm font-medium">{p}</span>
+                                </label>
+                            ))}
+                        </div>
+                        {selectedParticipants.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                                Split among {selectedParticipants.length} {selectedParticipants.length === 1 ? 'person' : 'people'}
+                            </p>
+                        )}
+                    </div>
+
                     {/* Split Type Selector */}
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Split Type</label>
@@ -180,7 +264,7 @@ export default function AddExpenseForm({ onAdd, participants = [], className, in
                             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                 {splitType === 'percentage' ? 'Split Percentages' : 'Split Amounts'}
                             </label>
-                            {uniqueParticipants.map(p => (
+                            {(selectedParticipants.length > 0 ? selectedParticipants : uniqueParticipants).map(p => (
                                 <div key={p} className="flex items-center gap-2">
                                     <span className="text-sm flex-1">{p}</span>
                                     <input
@@ -197,83 +281,7 @@ export default function AddExpenseForm({ onAdd, participants = [], className, in
                         </div>
                     )}
 
-                    {/* Recurring Expense Toggle */}
-                    <div className="flex items-center justify-between p-3 bg-secondary/20 rounded-xl">
-                        <label className="text-sm font-medium">Recurring Expense</label>
-                        <button
-                            type="button"
-                            onClick={() => setIsRecurring(!isRecurring)}
-                            className={cn(
-                                "w-12 h-6 rounded-full transition-all relative",
-                                isRecurring ? "bg-primary" : "bg-secondary"
-                            )}
-                        >
-                            <div className={cn(
-                                "absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all",
-                                isRecurring ? "left-6" : "left-0.5"
-                            )} />
-                        </button>
-                    </div>
 
-                    {/* Recurrence Pattern (if recurring) */}
-                    {isRecurring && (
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Repeat</label>
-                            <select
-                                value={recurrencePattern}
-                                onChange={(e) => setRecurrencePattern(e.target.value as any)}
-                                className="w-full p-3 bg-secondary/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            >
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                                <option value="yearly">Yearly</option>
-                            </select>
-                        </div>
-                    )}
-
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Paid By</label>
-                        <div className="flex flex-wrap gap-2">
-                            {uniqueParticipants.map(p => (
-                                <button
-                                    key={p}
-                                    type="button"
-                                    onClick={() => { setPayer(p); setIsCustomPayer(false); }}
-                                    className={cn(
-                                        "px-4 py-2 rounded-full text-sm font-medium transition-all",
-                                        payer === p && !isCustomPayer
-                                            ? "bg-primary text-primary-foreground shadow-md scale-105"
-                                            : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-                                    )}
-                                >
-                                    {p === "Me" ? "Me" : p}
-                                </button>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={() => { setIsCustomPayer(true); setPayer(""); }}
-                                className={cn(
-                                    "px-4 py-2 rounded-full text-sm font-medium transition-all",
-                                    isCustomPayer
-                                        ? "bg-primary text-primary-foreground shadow-md scale-105"
-                                        : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-                                )}
-                            >
-                                Other...
-                            </button>
-                        </div>
-
-                        {isCustomPayer && (
-                            <input
-                                type="text"
-                                value={payer}
-                                onChange={(e) => setPayer(e.target.value)}
-                                placeholder="Enter name..."
-                                className="w-full mt-2 p-3 bg-secondary/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 animate-in fade-in slide-in-from-top-2"
-                            />
-                        )}
-                    </div>
 
                     <button
                         type="submit"

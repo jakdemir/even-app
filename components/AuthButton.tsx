@@ -53,12 +53,32 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
                 )}
             </IDKitWidget>
             {process.env.NODE_ENV === 'development' && (
-                <button
-                    onClick={() => onSuccess("0x1234567890abcdef1234567890abcdef12345678")}
-                    className="w-full py-2 text-xs text-muted-foreground hover:text-primary underline"
-                >
-                    Mock Login (Dev Only)
-                </button>
+                <>
+                    <button
+                        onClick={() => {
+                            // Generate a random mock address
+                            const randomAddress = "0x" + Array.from({ length: 40 }, () =>
+                                Math.floor(Math.random() * 16).toString(16)
+                            ).join('');
+                            onSuccess(randomAddress);
+                        }}
+                        className="w-full py-2 text-xs text-muted-foreground hover:text-primary underline"
+                    >
+                        New Mock User (Dev Only)
+                    </button>
+                    <button
+                        onClick={() => onSuccess("0x1234567890abcdef1234567890abcdef12345678")}
+                        className="w-full py-2 text-xs text-muted-foreground hover:text-primary underline"
+                    >
+                        Mock User 1 (Dev Only)
+                    </button>
+                    <button
+                        onClick={() => onSuccess("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")}
+                        className="w-full py-2 text-xs text-muted-foreground hover:text-primary underline"
+                    >
+                        Mock User 2 (Dev Only)
+                    </button>
+                </>
             )}
         </div>
     );

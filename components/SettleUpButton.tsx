@@ -23,7 +23,7 @@ export default function SettleUpButton({ amount, recipient, disabled, className,
         // Check if MiniKit is available
         if (!MiniKit.isInstalled()) {
             setLoading(false);
-            alert("World App MiniKit is not available. Please use 'Record Payment' to manually record your payment.");
+            alert("World App MiniKit is not available. Please use 'Record Payment' to manually record the payment.");
             return;
         }
 
@@ -46,7 +46,7 @@ export default function SettleUpButton({ amount, recipient, disabled, className,
             }
         } catch (error) {
             console.error("Payment failed", error);
-            alert("Payment failed. Please try again or use 'Record Payment' to manually record your payment.");
+            alert("Payment failed. Please try again or use 'Record Payment' to manually record the payment.");
         } finally {
             setLoading(false);
         }

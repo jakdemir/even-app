@@ -23,7 +23,7 @@ export default function GroupSettings({ groupId, groupName }: GroupSettingsProps
     };
 
     const handleDelete = async () => {
-        if (confirm(`Are you sure you want to delete "${groupName}"? This will delete all expenses in this group.`)) {
+        if (confirm(`Delete "${groupName}"? This will delete all expenses in this group.`)) {
             await deleteGroup(groupId);
             leaveGroup();
         }

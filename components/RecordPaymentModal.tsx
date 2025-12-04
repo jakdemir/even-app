@@ -9,10 +9,11 @@ interface RecordPaymentModalProps {
     onClose: () => void;
     onRecord: (payment: Omit<Expense, "id" | "date" | "group_id">) => void;
     participants: string[];
+    currentUserName?: string;
 }
 
-export default function RecordPaymentModal({ isOpen, onClose, onRecord, participants }: RecordPaymentModalProps) {
-    const [payer, setPayer] = useState("Me");
+export default function RecordPaymentModal({ isOpen, onClose, onRecord, participants, currentUserName = "Me" }: RecordPaymentModalProps) {
+    const [payer, setPayer] = useState(currentUserName);
     const [recipient, setRecipient] = useState("");
     const [amount, setAmount] = useState("");
 
@@ -35,8 +36,8 @@ export default function RecordPaymentModal({ isOpen, onClose, onRecord, particip
 
     if (!isOpen) return null;
 
-    // Ensure "Me" is in the list if not already
-    const allParticipants = Array.from(new Set(["Me", ...participants])).sort();
+    // Ensure current user is in the list if not already
+    const allParticipants = Array.from(new Set([currentUserName, ...participants])).sort();
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">

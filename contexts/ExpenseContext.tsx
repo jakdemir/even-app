@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import { Expense, Group } from "@/types";
 import { supabase } from "@/lib/supabase";
 
@@ -36,22 +36,45 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(false);
     const [groupMembers, setGroupMembers] = useState<string[]>([]);
 
-    // Derived state: Unique participants (Group members + Current User + Display Name)
-    const participants = Array.from(new Set([
-        ...(displayName ? [displayName] : []),
-        ...(currentUser ? [currentUser] : []),
-        ...groupMembers
-    ])).filter(Boolean);
+    // Derived state: Unique participants (only display names, never wallet addresses)
+    // Include: current user's display name, group members, and anyone who has paid for an expense
+    const participants = useMemo(() => {
+        const allParticipants = new Set<string>();
 
-    // Load user and group from LocalStorage on mount
-    useEffect(() => {
-        const storedUser = localStorage.getItem("even_user");
-        const storedName = localStorage.getItem("even_name");
-        const storedGroup = localStorage.getItem("even_group");
-        if (storedUser) setCurrentUser(storedUser);
-        if (storedName) setDisplayNameState(storedName);
-        if (storedGroup) setGroupId(storedGroup);
-    }, []);
+        // Add current user's display name
+        if (displayName) allParticipants.add(displayName);
+
+        // Add group members
+        groupMembers.forEach(member => allParticipants.add(member));
+
+        // Add anyone who has paid for an expense (to catch people not yet in group_members)
+        expenses.forEach(expense => {
+            if (expense.payer && expense.payer !== currentUser) {
+                allParticipants.add(expense.payer);
+            }
+            // Also add people from splits
+            if (expense.splits) {
+                Object.keys(expense.splits).forEach(person => {
+                    if (person !== currentUser && person !== "Me") {
+                        allParticipants.add(person);
+                    }
+                });
+            }
+        });
+
+        return Array.from(allParticipants).filter(Boolean);
+    }, [displayName, groupMembers, expenses, currentUser]);
+
+    // Load user and group from LocalStorage on mount - DISABLED to prevent auto-login
+    // Users must explicitly click a login option
+    // useEffect(() => {
+    //     const storedUser = localStorage.getItem("even_user");
+    //     const storedName = localStorage.getItem("even_name");
+    //     const storedGroup = localStorage.getItem("even_group");
+    //     if (storedUser) setCurrentUser(storedUser);
+    //     if (storedName) setDisplayNameState(storedName);
+    //     if (storedGroup) setGroupId(storedGroup);
+    // }, []);
 
     // Save user/group to LocalStorage
     useEffect(() => {
@@ -79,6 +102,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         if (!currentUser) return;
 
         const fetchGroups = async () => {
+            console.log("Fetching groups for user:", currentUser);
             const { data, error } = await supabase
                 .from('group_members')
                 .select('group_id, groups(*)')
@@ -87,8 +111,14 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
             if (error) {
                 console.error('Error fetching groups:', error);
             } else if (data) {
+                console.log("Raw groups data:", data);
                 // @ts-ignore
-                setGroups(data.map(item => item.groups).filter(Boolean));
+                const groups = data.map(item => item.groups).filter(Boolean) as Group[];
+                console.log("Parsed groups:", groups);
+                setGroups(groups);
+            } else {
+                console.log("No groups data returned");
+                setGroups([]);
             }
         };
 

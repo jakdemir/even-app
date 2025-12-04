@@ -20,7 +20,7 @@ export default function SetUsernameForm({ onSetUsername, className }: SetUsernam
     return (
         <form onSubmit={handleSubmit} className={cn("space-y-4 p-6 bg-card rounded-xl border shadow-sm text-center", className)}>
             <h2 className="text-xl font-bold">Welcome to Even</h2>
-            <p className="text-sm text-muted-foreground">Choose a display name so friends know who you are.</p>
+            <p className="text-sm text-muted-foreground">Choose a display name for friends to recognize.</p>
 
             <input
                 type="text"
