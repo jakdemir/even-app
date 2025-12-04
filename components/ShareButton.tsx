@@ -12,19 +12,23 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
     const [copied, setCopied] = useState(false);
 
     const handleShare = async () => {
-        // Create invite URL with group ID
-        const baseUrl = window.location.origin;
-        const inviteUrl = `${baseUrl}?invite=${groupId}`;
+        const appId = process.env.NEXT_PUBLIC_APP_ID?.replace('app_', '') || '';
+
+        // Create World App deep link for mobile
+        const worldAppLink = `https://worldcoin.org/mini-app?app_id=${appId}&path=%2F%3Finvite%3D${groupId}`;
+
+        // Fallback web URL
+        const webUrl = `${window.location.origin}?invite=${groupId}`;
 
         const shareData = {
             title: 'Join my Even Group',
             text: `Join my expense group on Even!`,
-            url: inviteUrl,
+            url: worldAppLink, // Use World App link for sharing
         };
 
-        console.log("Attempting to share invite:", inviteUrl);
+        console.log("Attempting to share invite:", worldAppLink);
 
-        // Try native share first
+        // Try native share first (works great on mobile)
         if (navigator.share && navigator.canShare(shareData)) {
             try {
                 await navigator.share(shareData);
@@ -35,9 +39,9 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
             }
         }
 
-        // Fallback to clipboard - copy the invite URL
+        // Fallback to clipboard - copy the World App link
         try {
-            await navigator.clipboard.writeText(inviteUrl);
+            await navigator.clipboard.writeText(worldAppLink);
             console.log("Clipboard copy successful");
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
@@ -45,7 +49,7 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
             console.error("Failed to copy", err);
             // Fallback for non-secure contexts or older browsers
             const textArea = document.createElement("textarea");
-            textArea.value = inviteUrl;
+            textArea.value = worldAppLink;
             document.body.appendChild(textArea);
             textArea.select();
             try {
@@ -54,7 +58,7 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
                 setTimeout(() => setCopied(false), 2000);
             } catch (e) {
                 console.error("Fallback copy failed", e);
-                alert(`Invite link: ${inviteUrl}`);
+                alert(`Invite link: ${worldAppLink}`);
             }
             document.body.removeChild(textArea);
         }

@@ -19,7 +19,6 @@ export default function AddExpenseForm({ onAdd, participants = [], currentUserNa
     const [amount, setAmount] = useState(initialData?.amount.toString() || "");
     const [payer, setPayer] = useState(initialData?.payer || currentUserName);
     const [splitType, setSplitType] = useState<'equal' | 'unequal' | 'percentage'>(initialData?.split_type || 'equal');
-    const [currency, setCurrency] = useState(initialData?.currency || 'USD');
     const [customSplits, setCustomSplits] = useState<Record<string, string>>(initialData?.splits ? Object.fromEntries(Object.entries(initialData.splits).map(([k, v]) => [k, v.toString()])) : {});
     const [internalIsOpen, setInternalIsOpen] = useState(false);
     // Initialize with all participants selected by default
@@ -44,7 +43,7 @@ export default function AddExpenseForm({ onAdd, participants = [], currentUserNa
             payer,
             type: initialData?.type || 'expense',
             split_type: splitType,
-            currency,
+            currency: 'USD',
         };
 
         // Determine who shares this expense
@@ -74,7 +73,6 @@ export default function AddExpenseForm({ onAdd, participants = [], currentUserNa
             setAmount("");
             setPayer(currentUserName);
             setSplitType('equal');
-            setCurrency('USD');
             setCustomSplits({});
             setSelectedParticipants([]);
         }
@@ -156,22 +154,6 @@ export default function AddExpenseForm({ onAdd, participants = [], currentUserNa
                                 className="w-full p-4 pl-10 bg-secondary/30 rounded-2xl text-2xl font-bold placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                             />
                         </div>
-                    </div>
-
-                    {/* Currency Selector */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Currency</label>
-                        <select
-                            value={currency}
-                            onChange={(e) => setCurrency(e.target.value)}
-                            className="w-full p-3 bg-secondary/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        >
-                            <option value="USD">USD ($)</option>
-                            <option value="EUR">EUR (€)</option>
-                            <option value="GBP">GBP (£)</option>
-                            <option value="WLD">WLD</option>
-                            <option value="USDC">USDC</option>
-                        </select>
                     </div>
 
                     {/* Paid By */}

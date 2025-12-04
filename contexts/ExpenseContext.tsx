@@ -65,16 +65,15 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         return Array.from(allParticipants).filter(Boolean);
     }, [displayName, groupMembers, expenses, currentUser]);
 
-    // Load user and group from LocalStorage on mount - DISABLED to prevent auto-login
-    // Users must explicitly click a login option
-    // useEffect(() => {
-    //     const storedUser = localStorage.getItem("even_user");
-    //     const storedName = localStorage.getItem("even_name");
-    //     const storedGroup = localStorage.getItem("even_group");
-    //     if (storedUser) setCurrentUser(storedUser);
-    //     if (storedName) setDisplayNameState(storedName);
-    //     if (storedGroup) setGroupId(storedGroup);
-    // }, []);
+    // Load user and group from LocalStorage on mount
+    useEffect(() => {
+        const storedUser = localStorage.getItem("even_user");
+        const storedName = localStorage.getItem("even_name");
+        const storedGroup = localStorage.getItem("even_group");
+        if (storedUser) setCurrentUser(storedUser);
+        if (storedName) setDisplayNameState(storedName);
+        if (storedGroup) setGroupId(storedGroup);
+    }, []);
 
     // Save user/group to LocalStorage
     useEffect(() => {
