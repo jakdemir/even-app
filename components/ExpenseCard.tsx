@@ -62,9 +62,20 @@ export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
                     )}>
                         ${expense.amount.toFixed(2)}
                     </span>
-                    <span className="text-[10px] text-muted-foreground">
-                        {new Date(expense.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </span>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-muted-foreground font-medium">
+                            Recorded by {expense.payer}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                            {new Date(expense.date).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                            })}
+                        </span>
+                    </div>
                     {displayName === expense.payer && (
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button

@@ -18,9 +18,15 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
         const mockWalletAddress = "0x" + result.nullifier_hash.slice(2, 42);
         console.log("Generated Mock Address:", mockWalletAddress);
 
-        // TODO: Fetch actual username from World ID verification result
-        // For now, we'll let the app handle it
-        onSuccess(mockWalletAddress);
+        let username;
+        // @ts-ignore
+        if (typeof window !== 'undefined' && window.MiniKit?.isInstalled()) {
+            // @ts-ignore
+            username = window.MiniKit.user?.username;
+            console.log("MiniKit username:", username);
+        }
+
+        onSuccess(mockWalletAddress, username);
     };
 
     const handleError = (error: any) => {
