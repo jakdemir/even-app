@@ -34,23 +34,40 @@ export default function GroupList() {
                         <p className="text-sm">Create one to start sharing expenses!</p>
                     </div>
                 ) : (
-                    groups.map((group) => (
-                        <button
-                            key={group.id}
-                            onClick={() => joinGroup(group.id)}
-                            className="w-full p-4 rounded-xl border bg-card hover:bg-secondary/50 transition-all text-left flex items-center justify-between group"
-                        >
-                            <div>
-                                <h3 className="font-semibold">{group.name}</h3>
-                                <p className="text-xs text-muted-foreground">
-                                    Created {new Date(group.created_at).toLocaleDateString()}
-                                </p>
-                            </div>
-                            <div className="text-muted-foreground group-hover:text-primary transition-colors">
-                                →
-                            </div>
-                        </button>
-                    ))
+                    // Sort groups by created_at descending (most recent first) before rendering
+                    [...groups]
+                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                        .map((group) => {
+                            const createdDate = new Date(group.created_at);
+                            const formattedDate = createdDate.toLocaleDateString('en-US', {
+                                month: 'numeric',
+                                day: 'numeric',
+                                year: 'numeric'
+                            });
+                            const formattedTime = createdDate.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                            });
+
+                            return (
+                                <button
+                                    key={group.id}
+                                    onClick={() => joinGroup(group.id)}
+                                    className="w-full p-4 rounded-xl border bg-card hover:bg-secondary/50 transition-all text-left flex items-center justify-between group"
+                                >
+                                    <div>
+                                        <h3 className="font-semibold text-lg">{group.name}</h3>
+                                        <p className="text-xs text-muted-foreground mt-1 font-medium">
+                                            Created at {formattedDate} {formattedTime}
+                                        </p>
+                                    </div>
+                                    <div className="text-muted-foreground group-hover:text-primary transition-colors">
+                                        →
+                                    </div>
+                                </button>
+                            );
+                        })
                 )}
             </div>
         </div>

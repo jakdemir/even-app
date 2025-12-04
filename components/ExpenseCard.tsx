@@ -65,20 +65,22 @@ export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
                     <span className="text-[10px] text-muted-foreground">
                         {new Date(expense.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="text-xs text-blue-500 hover:underline"
-                        >
-                            Edit
-                        </button>
-                        <button
-                            onClick={handleDelete}
-                            className="text-xs text-red-500 hover:underline"
-                        >
-                            Delete
-                        </button>
-                    </div>
+                    {displayName === expense.payer && (
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="text-xs text-blue-500 hover:underline"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="text-xs text-red-500 hover:underline"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 

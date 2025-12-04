@@ -84,12 +84,6 @@ export default function GroupSettings({ groupId, groupName }: GroupSettingsProps
                                 >
                                     ✏️ Rename Group
                                 </button>
-                                <button
-                                    onClick={handleDelete}
-                                    className="w-full p-3 text-left rounded-xl hover:bg-red-50 text-red-600 transition-colors"
-                                >
-                                    🗑️ Delete Group
-                                </button>
                             </div>
                         )}
                     </div>

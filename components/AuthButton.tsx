@@ -5,7 +5,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface AuthButtonProps {
-    onSuccess: (address: string) => void;
+    onSuccess: (address: string, username?: string) => void;
     className?: string;
 }
 
@@ -17,6 +17,9 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
         console.log("Nullifier Hash:", result.nullifier_hash);
         const mockWalletAddress = "0x" + result.nullifier_hash.slice(2, 42);
         console.log("Generated Mock Address:", mockWalletAddress);
+
+        // TODO: Fetch actual username from World ID verification result
+        // For now, we'll let the app handle it
         onSuccess(mockWalletAddress);
     };
 
@@ -24,6 +27,14 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
         console.error("❌ IDKit Widget Error:", error);
         setLoading(false);
     };
+
+    // Predefined mock users for testing
+    const mockUsers = [
+        { address: "0x1111111111111111111111111111111111111111", name: "Alice" },
+        { address: "0x2222222222222222222222222222222222222222", name: "Bob" },
+        { address: "0x3333333333333333333333333333333333333333", name: "Charlie" },
+        { address: "0x4444444444444444444444444444444444444444", name: "Diana" },
+    ];
 
     return (
         <div className="w-full space-y-2">
@@ -53,32 +64,18 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
                 )}
             </IDKitWidget>
             {process.env.NODE_ENV === 'development' && (
-                <>
-                    <button
-                        onClick={() => {
-                            // Generate a random mock address
-                            const randomAddress = "0x" + Array.from({ length: 40 }, () =>
-                                Math.floor(Math.random() * 16).toString(16)
-                            ).join('');
-                            onSuccess(randomAddress);
-                        }}
-                        className="w-full py-2 text-xs text-muted-foreground hover:text-primary underline"
-                    >
-                        New Mock User (Dev Only)
-                    </button>
-                    <button
-                        onClick={() => onSuccess("0x1234567890abcdef1234567890abcdef12345678")}
-                        className="w-full py-2 text-xs text-muted-foreground hover:text-primary underline"
-                    >
-                        Mock User 1 (Dev Only)
-                    </button>
-                    <button
-                        onClick={() => onSuccess("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")}
-                        className="w-full py-2 text-xs text-muted-foreground hover:text-primary underline"
-                    >
-                        Mock User 2 (Dev Only)
-                    </button>
-                </>
+                <div className="space-y-2 pt-2">
+                    <p className="text-xs text-muted-foreground text-center">Dev Mode - Mock Users:</p>
+                    {mockUsers.map((user) => (
+                        <button
+                            key={user.address}
+                            onClick={() => onSuccess(user.address, user.name)}
+                            className="w-full py-2 px-4 text-sm bg-secondary hover:bg-secondary/80 rounded-xl transition-all"
+                        >
+                            Login as {user.name}
+                        </button>
+                    ))}
+                </div>
             )}
         </div>
     );

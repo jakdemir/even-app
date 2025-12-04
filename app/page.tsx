@@ -46,9 +46,9 @@ export default function Home() {
     }
   }, [expenses, currentUser, displayName]);
 
-  const handleLoginSuccess = (address: string) => {
-    console.log("Login success, address:", address);
-    login(address);
+  const handleLoginSuccess = (address: string, username?: string) => {
+    console.log("Login success, address:", address, "username:", username);
+    login(address, username);
   };
 
   const handleAddExpense = (expense: Omit<Expense, "id" | "date" | "group_id">) => {
@@ -103,17 +103,8 @@ export default function Home() {
 
   if (!displayName) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 max-w-md mx-auto">
-        <header className="w-full flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Even</h1>
-          <button
-            onClick={clearExpenses}
-            className="text-xs text-muted-foreground hover:text-primary underline"
-          >
-            Logout
-          </button>
-        </header>
-        <SetUsernameForm onSetUsername={updateDisplayName} />
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <div className="animate-pulse text-lg font-medium">Setting up profile...</div>
       </main>
     );
   }
@@ -123,12 +114,15 @@ export default function Home() {
       <main className="min-h-screen flex flex-col p-6 space-y-8 max-w-md mx-auto">
         <header className="w-full flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Even</h1>
-          <button
-            onClick={clearExpenses}
-            className="text-xs text-muted-foreground hover:text-primary underline"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">{displayName}</span>
+            <button
+              onClick={clearExpenses}
+              className="text-xs text-muted-foreground hover:text-primary underline"
+            >
+              Logout
+            </button>
+          </div>
         </header>
         <GroupList />
       </main>

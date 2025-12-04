@@ -10,7 +10,7 @@ interface ExpenseContextType {
     currentUser: string | null;
     displayName: string | null;
     groupId: string | null;
-    login: (address: string) => void;
+    login: (address: string, username?: string) => void;
     updateDisplayName: (name: string) => void;
     joinGroup: (groupId: string) => Promise<void>;
     leaveGroup: () => void;
@@ -114,6 +114,8 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
                 console.log("Raw groups data:", data);
                 // @ts-ignore
                 const groups = data.map(item => item.groups).filter(Boolean) as Group[];
+                // Sort by created_at descending (most recent first)
+                groups.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
                 console.log("Parsed groups:", groups);
                 setGroups(groups);
             } else {
@@ -125,10 +127,24 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         fetchGroups();
     }, [currentUser]);
 
-    const login = async (address: string) => {
+    const login = async (address: string, username?: string) => {
         setCurrentUser(address);
 
-        // Fetch existing profile
+        // If username is provided (mock users), use it immediately
+        if (username) {
+            setDisplayNameState(username);
+            // Save to database
+            const { error } = await supabase
+                .from('users')
+                .upsert({
+                    wallet_address: address,
+                    display_name: username
+                }, { onConflict: 'wallet_address' });
+            if (error) console.error('Error saving username:', error);
+            return;
+        }
+
+        // Fetch existing profile for World ID users
         const { data, error } = await supabase
             .from('users')
             .select('display_name')
@@ -138,11 +154,20 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         if (data?.display_name) {
             setDisplayNameState(data.display_name);
         } else {
-            // Create initial record if not exists
+            // No existing profile, create a default one
+            // Use a short version of the address as default name
+            const defaultName = `User ${address.slice(2, 8)}`;
+            setDisplayNameState(defaultName);
+
+            // Save to database
             const { error: upsertError } = await supabase
                 .from('users')
-                .upsert({ wallet_address: address }, { onConflict: 'wallet_address' });
-            if (upsertError) console.error('Error creating user:', upsertError);
+                .upsert({
+                    wallet_address: address,
+                    display_name: defaultName
+                }, { onConflict: 'wallet_address' });
+
+            if (upsertError) console.error('Error saving default username:', upsertError);
         }
     };
 
@@ -304,6 +329,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     };
 
     const deleteExpense = async (expenseId: string) => {
+        console.log('Attempting to delete expense:', expenseId);
         const { error } = await supabase
             .from('expenses')
             .delete()
@@ -311,9 +337,11 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
         if (error) {
             console.error('Error deleting expense:', error);
+            alert(`Failed to delete expense: ${error.message}`);
             return;
         }
 
+        console.log('Expense deleted successfully:', expenseId);
         setExpenses(prev => prev.filter(e => e.id !== expenseId));
     };
 
@@ -373,7 +401,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
                     filter: `group_id=eq.${groupId}`
                 },
                 (payload) => {
-                    console.log("🔔 Realtime event received:", payload);
+                    console.log("🔔 Realtime expense INSERT received:", payload);
                     const newExpense = parseExpense(payload.new);
                     setExpenses((prev) => {
                         // Deduplicate: if we already have this ID (e.g. from addExpense), don't add again
@@ -383,6 +411,48 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
                         }
                         return [newExpense, ...prev];
                     });
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'expenses'
+                },
+                (payload) => {
+                    console.log("🔔 Realtime expense UPDATE received:", payload);
+                    const updatedExpense = parseExpense(payload.new);
+                    setExpenses((prev) =>
+                        prev.map(e => e.id === updatedExpense.id ? updatedExpense : e)
+                    );
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'DELETE',
+                    schema: 'public',
+                    table: 'expenses'
+                },
+                (payload) => {
+                    console.log("🔔 Realtime expense DELETE received:", payload);
+                    const deletedId = payload.old.id;
+                    setExpenses((prev) => prev.filter(e => e.id !== deletedId));
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'group_members',
+                    filter: `group_id=eq.${groupId}`
+                },
+                (payload) => {
+                    console.log("🔔 Realtime group member event received:", payload);
+                    // Refetch group members when a new member joins
+                    fetchGroupMembers();
                 }
             )
             .subscribe((status) => {
