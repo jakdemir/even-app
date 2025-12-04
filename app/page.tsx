@@ -89,6 +89,15 @@ export default function Home() {
     );
   }
 
+  // Show verifying state if we have a user but no display name yet (transitioning)
+  if (currentUser && !displayName) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <div className="animate-pulse text-lg font-medium">Verifying identity...</div>
+      </main>
+    );
+  }
+
   if (!currentUser) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 text-center">
@@ -97,14 +106,6 @@ export default function Home() {
           <p className="text-muted-foreground">Split expenses with friends on World App.</p>
         </div>
         <AuthButton onSuccess={handleLoginSuccess} />
-      </main>
-    );
-  }
-
-  if (!displayName) {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <div className="animate-pulse text-lg font-medium">Setting up profile...</div>
       </main>
     );
   }

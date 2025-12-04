@@ -5,9 +5,9 @@ import { ReactNode, useEffect } from "react";
 
 export default function MiniKitProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
+        // Install MiniKit on client side
         MiniKit.install();
-        console.log("MiniKit installed:", MiniKit.isInstalled());
-        console.log("MiniKit object keys:", Object.keys(MiniKit));
+        console.log("MiniKit installed");
     }, []);
 
     return <>{children}</>;

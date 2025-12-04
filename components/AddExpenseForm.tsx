@@ -251,15 +251,17 @@ export default function AddExpenseForm({ onAdd, participants = [], currentUserNa
                                 <button
                                     key={type}
                                     type="button"
+                                    disabled={type !== 'equal'}
                                     onClick={() => setSplitType(type)}
                                     className={cn(
-                                        "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all",
+                                        "flex-1 py-2 rounded-xl text-sm font-medium transition-all capitalize",
                                         splitType === type
                                             ? "bg-primary text-primary-foreground shadow-md"
-                                            : "bg-secondary hover:bg-secondary/80"
+                                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+                                        type !== 'equal' && "opacity-50 cursor-not-allowed hover:bg-secondary"
                                     )}
                                 >
-                                    {type === 'equal' ? 'Equal' : type === 'unequal' ? 'Unequal' : 'By %'}
+                                    {type === 'percentage' ? 'By %' : type}
                                 </button>
                             ))}
                         </div>

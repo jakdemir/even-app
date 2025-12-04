@@ -17,7 +17,7 @@
     "@worldcoin/minikit-js": "^1.9.8",
     "clsx": "^2.1.1",
     "eruda": "^3.4.3",
-    "next": "^15.1.6",
+    "next": "^16.0.7",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwind-merge": "^3.4.0"

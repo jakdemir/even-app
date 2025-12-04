@@ -1,6 +1,6 @@
 "use client";
 
-import { useIDKit, IDKitWidget, VerificationLevel, ISuccessResult } from "@worldcoin/idkit";
+import { MiniKit } from "@worldcoin/minikit-js";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -12,29 +12,65 @@ interface AuthButtonProps {
 export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
     const [loading, setLoading] = useState(false);
 
-    const handleVerify = async (result: ISuccessResult) => {
-        console.log("✅ World ID Verification Success:", result);
-        console.log("Nullifier Hash:", result.nullifier_hash);
-        const mockWalletAddress = "0x" + result.nullifier_hash.slice(2, 42);
-        console.log("Generated Mock Address:", mockWalletAddress);
+    const handleWalletAuth = async () => {
+        setLoading(true);
+        try {
+            console.log("Starting wallet auth...");
 
-        let username;
-        // @ts-ignore
-        if (typeof window !== 'undefined' && window.MiniKit?.isInstalled()) {
-            // @ts-ignore
-            username = window.MiniKit.user?.username;
-            console.log("MiniKit username:", username);
+            // Step 1: Get nonce from server
+            const res = await fetch(`/api/nonce`);
+            const { nonce } = await res.json();
+
+            console.log("Nonce received:", nonce);
+
+            // Step 2: Request wallet authentication from MiniKit
+            const { commandPayload, finalPayload } = await MiniKit.commandsAsync.walletAuth({
+                nonce: nonce,
+                requestId: '0',
+                expirationTime: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000),
+                notBefore: new Date(new Date().getTime() - 24 * 60 * 60 * 1000),
+                statement: 'Sign in to Even - Split expenses with friends',
+            });
+
+            console.log("Wallet auth response:", { commandPayload, finalPayload });
+
+            // Step 3: Check for errors
+            if (finalPayload.status === 'error') {
+                console.error("Wallet auth error:", finalPayload);
+                setLoading(false);
+                return;
+            }
+
+            // Step 4: Verify the signature on the server
+            const verifyResponse = await fetch('/api/complete-siwe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    payload: finalPayload,
+                    nonce,
+                }),
+            });
+
+            const verifyResult = await verifyResponse.json();
+            console.log("Verification result:", verifyResult);
+
+            if (verifyResult.isValid) {
+                const username = MiniKit.user?.username;
+                console.log("Login successful - Address:", verifyResult.address, "Username:", username);
+                onSuccess(verifyResult.address, username);
+            } else {
+                console.error("Signature verification failed:", verifyResult.message);
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error("Wallet authentication exception:", error);
+            setLoading(false);
         }
-
-        onSuccess(mockWalletAddress, username);
     };
 
-    const handleError = (error: any) => {
-        console.error("❌ IDKit Widget Error:", error);
-        setLoading(false);
-    };
-
-    // Predefined mock users for testing
+    // Mock users for development testing
     const mockUsers = [
         { address: "0x1111111111111111111111111111111111111111", name: "Alice" },
         { address: "0x2222222222222222222222222222222222222222", name: "Bob" },
@@ -44,31 +80,16 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
 
     return (
         <div className="w-full space-y-2">
-            <IDKitWidget
-                app_id={process.env.NEXT_PUBLIC_APP_ID as `app_${string}`}
-                action="login"
-                onSuccess={handleVerify}
-                handleVerify={handleVerify}
-                onError={handleError}
-                verification_level={VerificationLevel.Device}
-                // @ts-ignore
-                title="Sign in with World ID"
-                // @ts-ignore
-                description="Please scan the QR code to log in."
-            >
-                {({ open }) => (
-                    <button
-                        onClick={open}
-                        disabled={loading}
-                        className={cn(
-                            "w-full py-4 px-6 bg-foreground text-background font-bold rounded-2xl text-lg transition-all active:scale-95 disabled:opacity-50",
-                            className
-                        )}
-                    >
-                        {loading ? "Connecting..." : "Sign in with World ID"}
-                    </button>
+            <button
+                onClick={handleWalletAuth}
+                disabled={loading}
+                className={cn(
+                    "w-full py-4 px-6 bg-foreground text-background font-bold rounded-2xl text-lg transition-all active:scale-95 disabled:opacity-50",
+                    className
                 )}
-            </IDKitWidget>
+            >
+                {loading ? "Authenticating..." : "Sign in with Wallet"}
+            </button>
             {process.env.NODE_ENV === 'development' && (
                 <div className="space-y-2 pt-2">
                     <p className="text-xs text-muted-foreground text-center">Dev Mode - Mock Users:</p>
