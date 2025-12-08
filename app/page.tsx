@@ -206,6 +206,23 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Group Members Section */}
+      <div className="mb-6 p-4 rounded-xl bg-secondary/30 border">
+        <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+          Group Members ({participants.length})
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {participants.map(member => (
+            <div
+              key={member}
+              className="px-3 py-1.5 bg-background rounded-full text-sm font-medium border shadow-sm"
+            >
+              {member === displayName ? `${member} (You)` : member}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Spending Summary */}
       <SpendingSummary expenses={expenses} currentUser={currentUser!} displayName={displayName} debts={debts} />
 
