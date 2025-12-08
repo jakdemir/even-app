@@ -167,10 +167,10 @@ export default function GroupList() {
                                             e.stopPropagation();
                                             setLeaveConfirm(group.id);
                                         }}
-                                        className="ml-3 p-2 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
+                                        className="ml-3 px-3 py-1.5 text-xs font-medium text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors border border-orange-200 dark:border-orange-900/50"
                                         title="Leave group"
                                     >
-                                        🚪
+                                        Leave Group
                                     </button>
                                 </div>
                             );

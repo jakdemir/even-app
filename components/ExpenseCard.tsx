@@ -77,16 +77,16 @@ export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
                         </span>
                     </div>
                     {displayName === expense.payer && (
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-2 mt-1">
                             <button
                                 onClick={() => setIsEditing(true)}
-                                className="text-xs text-blue-500 hover:underline"
+                                className="text-xs text-blue-500 hover:underline font-medium"
                             >
                                 Edit
                             </button>
                             <button
                                 onClick={handleDelete}
-                                className="text-xs text-red-500 hover:underline"
+                                className="text-xs text-red-500 hover:underline font-medium"
                             >
                                 Delete
                             </button>
