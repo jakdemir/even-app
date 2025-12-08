@@ -23,18 +23,53 @@ export default function Home() {
   const [debts, setDebts] = useState<import("@/lib/debt").Debt[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  // Handle invite link
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [isJoiningFromInvite, setIsJoiningFromInvite] = useState(false);
+
+  // Early detection of invite parameter - store in localStorage before auth
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const inviteGroupId = params.get('invite');
 
-    if (inviteGroupId && currentUser && displayName && !groupId) {
-      console.log("Auto-joining group from invite:", inviteGroupId);
-      joinGroup(inviteGroupId);
-      // Clean up URL
+    if (inviteGroupId) {
+      console.log("Invite detected, storing in localStorage:", inviteGroupId);
+      localStorage.setItem('even_pending_invite', inviteGroupId);
+      // Clean up URL immediately
       window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [currentUser, displayName, groupId, joinGroup]);
+  }, []); // Run only once on mount
+
+  // Handle invite link - attempt to join when user is authenticated and has display name
+  useEffect(() => {
+    const pendingInvite = localStorage.getItem('even_pending_invite');
+
+    // Only proceed if we have a pending invite, user is authenticated with display name, and not already in a group
+    if (pendingInvite && currentUser && displayName && !groupId && !isJoiningFromInvite) {
+      console.log("Attempting to auto-join group from invite:", pendingInvite);
+      setIsJoiningFromInvite(true);
+      setInviteError(null);
+
+      joinGroup(pendingInvite)
+        .then((success) => {
+          if (success) {
+            console.log("Successfully joined group from invite");
+            localStorage.removeItem('even_pending_invite');
+          } else {
+            console.error("Failed to join group from invite");
+            setInviteError("Unable to join group. The invite link may be invalid or expired.");
+            localStorage.removeItem('even_pending_invite');
+          }
+        })
+        .catch((error) => {
+          console.error("Error joining group from invite:", error);
+          setInviteError("An error occurred while joining the group.");
+          localStorage.removeItem('even_pending_invite');
+        })
+        .finally(() => {
+          setIsJoiningFromInvite(false);
+        });
+    }
+  }, [currentUser, displayName, groupId, joinGroup, isJoiningFromInvite]);
 
   useEffect(() => {
     // We use displayName as the identifier for "Me" in expenses if it exists
@@ -81,10 +116,12 @@ export default function Home() {
   // Find current group name
   const currentGroup = groups.find(g => g.id === groupId);
 
-  if (isLoading) {
+  if (isLoading || isJoiningFromInvite) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-        <div className="animate-pulse text-lg font-medium">Loading expenses...</div>
+        <div className="animate-pulse text-lg font-medium">
+          {isJoiningFromInvite ? "Joining group..." : "Loading expenses..."}
+        </div>
       </main>
     );
   }
@@ -125,6 +162,17 @@ export default function Home() {
             </button>
           </div>
         </header>
+        {inviteError && (
+          <div className="p-4 rounded-xl bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-900/50">
+            <p className="text-sm text-red-600 dark:text-red-400">{inviteError}</p>
+            <button
+              onClick={() => setInviteError(null)}
+              className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 underline mt-2"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         <GroupList />
       </main>
     );

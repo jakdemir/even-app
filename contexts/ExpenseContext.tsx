@@ -13,7 +13,7 @@ interface ExpenseContextType {
     groupId: string | null;
     login: (address: string, username?: string) => void;
     updateDisplayName: (name: string) => void;
-    joinGroup: (groupId: string) => Promise<void>;
+    joinGroup: (groupId: string) => Promise<boolean>;
     leaveGroup: () => void;
     createGroup: (name: string) => Promise<string | null>;
     updateGroup: (groupId: string, name: string) => Promise<void>;
@@ -252,35 +252,67 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         if (groupId === id) setGroupId(null);
     };
 
-    const joinGroup = async (id: string) => {
-        if (!currentUser) return;
+    const joinGroup = async (id: string): Promise<boolean> => {
+        if (!currentUser) {
+            logger.warn('Cannot join group: no current user');
+            return false;
+        }
 
-        // Check if already a member
-        const isMember = groups.some(g => g.id === id);
-        if (!isMember) {
-            const { error } = await supabase
-                .from('group_members')
-                .insert([{ group_id: id, user_id: currentUser }]);
+        logger.userAction('Join Group', { groupId: id, userId: currentUser });
 
-            if (error) {
-                console.error('Error joining group:', error);
-                // If error is duplicate key, it means we are already joined, which is fine
-            }
-
-            // Fetch the group details to add to state
-            const { data } = await supabase
+        try {
+            // First, verify the group exists
+            logger.dbQuery('SELECT', 'groups', { id });
+            const { data: groupData, error: groupError } = await supabase
                 .from('groups')
                 .select('*')
                 .eq('id', id)
                 .single();
 
-            if (data) {
-                setGroups(prev => [...prev, data as Group]);
+            if (groupError || !groupData) {
+                logger.error('Group not found or error fetching group', groupError);
+                console.error('Cannot join group: group does not exist or is inaccessible');
+                return false;
             }
-        }
 
-        setGroupId(id);
-        setExpenses([]); // Clear previous expenses when switching groups
+            // Check if already a member
+            const isMember = groups.some(g => g.id === id);
+            if (!isMember) {
+                logger.dbQuery('INSERT', 'group_members', { group_id: id, user_id: currentUser });
+                const { error: joinError } = await supabase
+                    .from('group_members')
+                    .insert([{ group_id: id, user_id: currentUser }]);
+
+                if (joinError) {
+                    // Check if it's a duplicate key error (already a member)
+                    if (joinError.code === '23505') {
+                        logger.info('User already a member of group', { groupId: id });
+                    } else {
+                        logger.error('Error joining group', joinError);
+                        console.error('Error joining group:', joinError);
+                        return false;
+                    }
+                } else {
+                    logger.info('Successfully joined group', { groupId: id });
+                }
+
+                // Add group to local state if not already there
+                if (!groups.some(g => g.id === id)) {
+                    setGroups(prev => [...prev, groupData as Group]);
+                }
+            } else {
+                logger.info('Already a member, switching to group', { groupId: id });
+            }
+
+            setGroupId(id);
+            setExpenses([]); // Clear previous expenses when switching groups
+            logger.info('Group joined successfully', { groupId: id });
+            return true;
+        } catch (error) {
+            logger.error('Unexpected error joining group', error);
+            console.error('Unexpected error joining group:', error);
+            return false;
+        }
     };
 
     const leaveGroup = () => {
