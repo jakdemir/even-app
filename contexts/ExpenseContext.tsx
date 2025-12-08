@@ -15,6 +15,7 @@ interface ExpenseContextType {
     updateDisplayName: (name: string) => void;
     joinGroup: (groupId: string) => Promise<boolean>;
     leaveGroup: () => void;
+    removeFromGroup: (groupId: string) => Promise<void>;
     createGroup: (name: string) => Promise<string | null>;
     updateGroup: (groupId: string, name: string) => Promise<void>;
     deleteGroup: (groupId: string) => Promise<void>;
@@ -321,6 +322,42 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         setGroupMembers([]);
     };
 
+    const removeFromGroup = async (id: string) => {
+        if (!currentUser) return;
+
+        logger.userAction('Remove from Group', { groupId: id, userId: currentUser });
+
+        try {
+            // Remove user from group_members table
+            logger.dbQuery('DELETE', 'group_members', { group_id: id, user_id: currentUser });
+            const { error } = await supabase
+                .from('group_members')
+                .delete()
+                .eq('group_id', id)
+                .eq('user_id', currentUser);
+
+            if (error) {
+                logger.error('Error removing from group', error);
+                console.error('Error removing from group:', error);
+                throw error;
+            }
+
+            logger.info('Successfully removed from group', { groupId: id });
+
+            // Remove group from local state
+            setGroups(prev => prev.filter(g => g.id !== id));
+
+            // If currently viewing this group, leave it
+            if (groupId === id) {
+                leaveGroup();
+            }
+        } catch (error) {
+            logger.error('Unexpected error removing from group', error);
+            console.error('Unexpected error removing from group:', error);
+            throw error;
+        }
+    };
+
     const addExpense = async (newExpense: Omit<Expense, "id" | "date" | "group_id">) => {
         if (!groupId) return;
 
@@ -535,7 +572,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <ExpenseContext.Provider value={{ expenses, groups, currentUser, displayName, groupId, login, updateDisplayName, joinGroup, leaveGroup, createGroup, updateGroup, deleteGroup, addExpense, updateExpense, deleteExpense, clearExpenses, isLoading, participants }}>
+        <ExpenseContext.Provider value={{ expenses, groups, currentUser, displayName, groupId, login, updateDisplayName, joinGroup, leaveGroup, removeFromGroup, createGroup, updateGroup, deleteGroup, addExpense, updateExpense, deleteExpense, clearExpenses, isLoading, participants }}>
             {children}
         </ExpenseContext.Provider>
     );

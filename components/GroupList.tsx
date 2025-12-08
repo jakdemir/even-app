@@ -6,14 +6,14 @@ import CreateGroupForm from "./CreateGroupForm";
 import { cn } from "@/lib/utils";
 
 export default function GroupList() {
-    const { groups, joinGroup, deleteGroup, currentUser } = useExpenses();
+    const { groups, joinGroup, removeFromGroup, currentUser } = useExpenses();
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [groupIdInput, setGroupIdInput] = useState("");
     const [isJoiningGroup, setIsJoiningGroup] = useState(false);
     const [joinError, setJoinError] = useState<string | null>(null);
-    const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+    const [leaveConfirm, setLeaveConfirm] = useState<string | null>(null);
+    const [isLeaving, setIsLeaving] = useState(false);
 
     const handleManualJoin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,16 +37,16 @@ export default function GroupList() {
         }
     };
 
-    const handleDeleteGroup = async (groupId: string) => {
-        setIsDeleting(true);
+    const handleLeaveGroup = async (groupId: string) => {
+        setIsLeaving(true);
         try {
-            await deleteGroup(groupId);
-            setDeleteConfirm(null);
+            await removeFromGroup(groupId);
+            setLeaveConfirm(null);
         } catch (error) {
-            console.error("Error deleting group:", error);
-            alert("Failed to delete group. Please try again.");
+            console.error("Error leaving group:", error);
+            alert("Failed to leave group. Please try again.");
         } finally {
-            setIsDeleting(false);
+            setIsLeaving(false);
         }
     };
 
@@ -141,7 +141,6 @@ export default function GroupList() {
                                 minute: '2-digit',
                                 hour12: true
                             });
-                            const isCreator = currentUser === group.created_by;
 
                             return (
                                 <div
@@ -163,46 +162,44 @@ export default function GroupList() {
                                         </div>
                                     </button>
 
-                                    {isCreator && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDeleteConfirm(group.id);
-                                            }}
-                                            className="ml-3 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                            title="Delete group"
-                                        >
-                                            🗑️
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setLeaveConfirm(group.id);
+                                        }}
+                                        className="ml-3 p-2 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
+                                        title="Leave group"
+                                    >
+                                        🚪
+                                    </button>
                                 </div>
                             );
                         })
                 )}
             </div>
 
-            {/* Delete Confirmation Modal */}
-            {deleteConfirm && (
+            {/* Leave Confirmation Modal */}
+            {leaveConfirm && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-card rounded-xl p-6 max-w-sm w-full border shadow-lg">
-                        <h3 className="text-lg font-bold mb-2">Delete Group?</h3>
+                        <h3 className="text-lg font-bold mb-2">Leave Group?</h3>
                         <p className="text-sm text-muted-foreground mb-4">
-                            This will permanently delete the group and all its expenses. This action cannot be undone.
+                            You will be removed from this group and will no longer see its expenses. You can rejoin later if you have the group ID or invite link.
                         </p>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => setDeleteConfirm(null)}
-                                disabled={isDeleting}
+                                onClick={() => setLeaveConfirm(null)}
+                                disabled={isLeaving}
                                 className="flex-1 py-2 px-4 bg-secondary text-secondary-foreground font-semibold rounded-lg hover:bg-secondary/80 disabled:opacity-50 transition-all"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={() => handleDeleteGroup(deleteConfirm)}
-                                disabled={isDeleting}
-                                className="flex-1 py-2 px-4 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 disabled:opacity-50 transition-all"
+                                onClick={() => handleLeaveGroup(leaveConfirm)}
+                                disabled={isLeaving}
+                                className="flex-1 py-2 px-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-all"
                             >
-                                {isDeleting ? "Deleting..." : "Delete"}
+                                {isLeaving ? "Leaving..." : "Leave"}
                             </button>
                         </div>
                     </div>
