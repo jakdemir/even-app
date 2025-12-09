@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { Expense } from "@/types";
 
 export default function Home() {
-  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup, leaveGroup, displayName, updateDisplayName, participants, groups, clearExpenses, refreshExpenses } = useExpenses();
+  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup, leaveGroup, displayName, updateDisplayName, participants, groups, clearExpenses, refreshExpenses, userWallets } = useExpenses();
   const isAuthenticated = !!currentUser;
   const [debts, setDebts] = useState<import("@/lib/debt").Debt[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -354,11 +354,27 @@ export default function Home() {
 
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <SettleUpButton
-          suggestedAmount={debts.find(d => d.debtor === currentUser || d.debtor === displayName)?.amount || 0}
-          recipient={debts.find(d => d.debtor === currentUser || d.debtor === displayName)?.creditor || ""}
-          disabled={!debts.some(d => d.debtor === currentUser || d.debtor === displayName)}
-        />
+        {(() => {
+          const myDebt = debts.find(d => d.debtor === currentUser || d.debtor === displayName);
+          const creditorName = myDebt?.creditor || "";
+          const creditorWallet = userWallets[creditorName] || "";
+
+          console.log('💰 [SETTLE UP BUTTON] Debt info:', {
+            myDebt,
+            creditorName,
+            creditorWallet,
+            userWallets
+          });
+
+          return (
+            <SettleUpButton
+              suggestedAmount={myDebt?.amount || 0}
+              recipient={creditorWallet}
+              recipientName={creditorName}
+              disabled={!myDebt || !creditorWallet}
+            />
+          );
+        })()}
         <button
           className="flex items-center justify-center gap-2 py-3 px-4 bg-secondary text-secondary-foreground font-semibold rounded-xl active:scale-95 transition-all"
           onClick={() => setIsPaymentModalOpen(true)}

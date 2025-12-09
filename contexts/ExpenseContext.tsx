@@ -27,6 +27,7 @@ interface ExpenseContextType {
     refreshGroups: () => Promise<void>;
     isLoading: boolean;
     participants: string[];
+    userWallets: Record<string, string>; // displayName -> walletAddress
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
@@ -39,6 +40,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     const [groupId, setGroupId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [groupMembers, setGroupMembers] = useState<string[]>([]);
+    const [userWallets, setUserWallets] = useState<Record<string, string>>({}); // displayName -> walletAddress
 
     // Derived state: Unique participants (only display names, never wallet addresses)
     // Include: current user's display name, group members, and anyone who has paid for an expense
@@ -661,7 +663,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <ExpenseContext.Provider value={{ expenses, groups, currentUser, displayName, groupId, login, updateDisplayName, joinGroup, leaveGroup, removeFromGroup, createGroup, updateGroup, deleteGroup, addExpense, updateExpense, deleteExpense, clearExpenses, refreshExpenses, refreshGroups, isLoading, participants }}>
+        <ExpenseContext.Provider value={{ expenses, groups, currentUser, displayName, groupId, login, updateDisplayName, joinGroup, leaveGroup, removeFromGroup, createGroup, updateGroup, deleteGroup, addExpense, updateExpense, deleteExpense, clearExpenses, refreshExpenses, refreshGroups, isLoading, participants, userWallets }}>
             {children}
         </ExpenseContext.Provider>
     );
