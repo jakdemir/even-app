@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useExpenses } from "@/contexts/ExpenseContext";
 import CreateGroupForm from "./CreateGroupForm";
 import { cn } from "@/lib/utils";
 
 export default function GroupList() {
-    const { groups, joinGroup, removeFromGroup, currentUser } = useExpenses();
+    const { groups, joinGroup, removeFromGroup, currentUser, refreshGroups } = useExpenses();
     const [isCreating, setIsCreating] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
     const [groupIdInput, setGroupIdInput] = useState("");
@@ -14,6 +14,70 @@ export default function GroupList() {
     const [joinError, setJoinError] = useState<string | null>(null);
     const [leaveConfirm, setLeaveConfirm] = useState<string | null>(null);
     const [isLeaving, setIsLeaving] = useState(false);
+
+    // Pull-to-refresh state
+    const [isPulling, setIsPulling] = useState(false);
+    const [pullDistance, setPullDistance] = useState(0);
+    const pullStartY = useRef(0);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Pull-to-refresh with native event listeners
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const element = containerRef.current;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            console.log('👆 [GROUPS TOUCH START] scrollTop:', scrollTop);
+            if (scrollTop === 0) {
+                pullStartY.current = e.touches[0].clientY;
+                console.log('👆 [GROUPS TOUCH START] Set startY:', e.touches[0].clientY);
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (pullStartY.current === 0) return;
+
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            if (scrollTop > 0) {
+                console.log('👆 [GROUPS TOUCH MOVE] Scrolled down, resetting');
+                pullStartY.current = 0;
+                return;
+            }
+
+            const currentY = e.touches[0].clientY;
+            const distance = currentY - pullStartY.current;
+
+            if (distance > 0) {
+                console.log('👆 [GROUPS TOUCH MOVE] Pull distance:', distance);
+                e.preventDefault();
+                setIsPulling(true);
+                setPullDistance(Math.min(distance, 100));
+            }
+        };
+
+        const handleTouchEnd = async () => {
+            console.log('👆 [GROUPS TOUCH END] Pull distance:', pullDistance);
+            if (pullDistance > 60) {
+                console.log('🔄 [GROUPS TOUCH END] Triggering refresh...');
+                await refreshGroups();
+            }
+            setIsPulling(false);
+            setPullDistance(0);
+            pullStartY.current = 0;
+        };
+
+        element.addEventListener('touchstart', handleTouchStart, { passive: true });
+        element.addEventListener('touchmove', handleTouchMove, { passive: false });
+        element.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+        return () => {
+            element.removeEventListener('touchstart', handleTouchStart);
+            element.removeEventListener('touchmove', handleTouchMove);
+            element.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [pullDistance, refreshGroups]);
 
     const handleManualJoin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -51,7 +115,22 @@ export default function GroupList() {
     };
 
     return (
-        <div className="space-y-6">
+        <div ref={containerRef} className="space-y-6 relative">
+            {/* Pull-to-refresh indicator */}
+            {isPulling && (
+                <div
+                    className="fixed top-0 left-0 right-0 flex justify-center items-center z-50 transition-all"
+                    style={{
+                        height: `${pullDistance}px`,
+                        opacity: pullDistance / 100
+                    }}
+                >
+                    <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-lg">
+                        {pullDistance > 60 ? '↻' : '↓'}
+                    </div>
+                </div>
+            )}
+
             <header className="flex items-center justify-between">
                 <h2 className="text-xl font-bold">My Groups</h2>
                 <div className="flex items-center gap-3">
