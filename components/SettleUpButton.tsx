@@ -24,6 +24,12 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, disable
             return;
         }
 
+        if (!recipient || recipient.trim() === "") {
+            alert("No recipient selected. Please record a payment manually.");
+            setIsModalOpen(false);
+            return;
+        }
+
         setLoading(true);
 
         // Check if MiniKit is available
@@ -73,7 +79,13 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, disable
     return (
         <>
             <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => {
+                    if (disabled || !recipient) {
+                        console.warn('⚠️ [SETTLE UP] Button clicked but disabled or no recipient');
+                        return;
+                    }
+                    setIsModalOpen(true);
+                }}
                 disabled={disabled}
                 className={cn(
                     "flex items-center justify-center gap-2 py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-xl active:scale-95 transition-all disabled:opacity-50",
