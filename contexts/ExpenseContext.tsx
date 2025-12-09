@@ -635,18 +635,29 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
             // Fetch group members
             const { data: membersData, error: membersError } = await supabase
                 .from('group_members')
-                .select('user_id, users(display_name)')
+                .select('user_id, users(display_name, wallet_address)')
                 .eq('group_id', groupId);
 
             if (membersError) {
                 console.error('❌ [REFRESH] Error fetching members:', membersError);
             } else if (membersData) {
                 const members = membersData.map((m: any) => m.users?.display_name || m.user_id);
-                console.log('✅ [REFRESH] Fetched members:', members);
-                setGroupMembers(members);
-            }
+                const walletMap: Record<string, string> = {};
 
-            console.log('✅ [REFRESH] Refresh complete');
+                // Create mapping of display names to wallet addresses
+                membersData.forEach((m: any) => {
+                    if (m.users?.display_name && m.user_id) {
+                        walletMap[m.users.display_name] = m.user_id;
+                    }
+                });
+
+                console.log('✅ [REFRESH] Fetched members:', members);
+                console.log('💼 [REFRESH] Updated wallet mapping:', walletMap);
+                setGroupMembers(members);
+                setUserWallets(walletMap);
+            }
+        } catch (error) {
+            console.error('❌ [REFRESH] Unexpected error:', error);
         } finally {
             setIsLoading(false);
         }
