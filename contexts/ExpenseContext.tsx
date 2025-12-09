@@ -518,7 +518,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         const fetchGroupMembers = async () => {
             const { data, error } = await supabase
                 .from('group_members')
-                .select('user_id, users(display_name)')
+                .select('user_id, users(display_name, wallet_address)')
                 .eq('group_id', groupId);
 
             if (error) {
@@ -526,7 +526,24 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
             } else if (data) {
                 // Map to display names if available, else wallet addresses
                 const members = data.map((m: any) => m.users?.display_name || m.user_id);
+                const walletMap: Record<string, string> = {};
+
+                // Create mapping of display names to wallet addresses
+                data.forEach((m: any) => {
+                    if (m.users?.display_name && m.user_id) {
+                        walletMap[m.users.display_name] = m.user_id;
+                    }
+                });
+
+                // Also add current user if they have a display name
+                if (displayName && currentUser) {
+                    walletMap[displayName] = currentUser;
+                }
+
+                console.log('💼 [INITIAL LOAD] Created wallet mapping:', walletMap);
+                console.log('💼 [INITIAL LOAD] Current user:', { displayName, wallet: currentUser });
                 setGroupMembers(members);
+                setUserWallets(walletMap);
             }
         };
 
