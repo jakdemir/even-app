@@ -37,9 +37,16 @@ export default function AddExpenseForm({ onAdd, participants = [], currentUserNa
         e.preventDefault();
         if (!description || !amount) return;
 
+        // Validate amount is a valid number
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            alert("Please enter a valid amount greater than 0");
+            return;
+        }
+
         const expenseData: Omit<Expense, "id" | "date" | "group_id"> = {
             description,
-            amount: parseFloat(amount),
+            amount: parsedAmount,
             payer,
             type: initialData?.type || 'expense',
             split_type: splitType,
@@ -62,7 +69,7 @@ export default function AddExpenseForm({ onAdd, participants = [], currentUserNa
         } else {
             // For equal split (or fallback), store participants with equal shares
             expenseData.splits = Object.fromEntries(
-                participantsToSplit.map(p => [p, parseFloat(amount) / participantsToSplit.length])
+                participantsToSplit.map(p => [p, parsedAmount / participantsToSplit.length])
             );
         }
 

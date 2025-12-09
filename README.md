@@ -16,6 +16,51 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Group Invite Links
+
+### Sharing Groups via Invite Links
+
+Even supports group invitations through URL parameters and Worldcoin backlinks, allowing users to join groups seamlessly.
+
+#### URL Format
+
+**Web URL:**
+```
+https://your-app-url.com/?invite=GROUP_ID
+```
+
+**Worldcoin Backlink:**
+```
+worldcoin://even?invite=GROUP_ID
+```
+
+#### How It Works
+
+1. **Generate Invite Link**: When viewing a group, click the share button to copy the invite link
+2. **Share**: Send the link to friends via any messaging platform
+3. **Join**: Recipients open the link, log in if needed, and are automatically joined to the group
+
+#### Technical Details
+
+- Invite links work before and after authentication
+- The `invite` parameter is stored in localStorage until the user logs in
+- Once authenticated, users are automatically joined to the pending group
+- The URL is cleaned up after the invite parameter is processed
+- Backlinks open directly in the World App for a seamless experience
+
+#### Example Usage
+
+```javascript
+// Get current group ID from URL
+const groupId = "abc123-def456-ghi789";
+
+// Create shareable link
+const inviteUrl = `${window.location.origin}/?invite=${groupId}`;
+
+// Or create Worldcoin backlink
+const backlink = `worldcoin://even?invite=${groupId}`;
+```
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

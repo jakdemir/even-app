@@ -21,9 +21,16 @@ export default function RecordPaymentModal({ isOpen, onClose, onRecord, particip
         e.preventDefault();
         if (!payer || !recipient || !amount) return;
 
+        // Validate amount is a valid number
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            alert("Please enter a valid amount greater than 0");
+            return;
+        }
+
         onRecord({
             description: "Payment",
-            amount: parseFloat(amount),
+            amount: parsedAmount,
             payer,
             recipient,
             type: 'payment',
@@ -86,11 +93,18 @@ export default function RecordPaymentModal({ isOpen, onClose, onRecord, particip
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-muted-foreground">$</span>
                             <input
-                                type="number"
+                                type="text"
+                                inputMode="decimal"
+                                pattern="[0-9]*\.?[0-9]*"
                                 value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    // Only allow numbers and decimal point
+                                    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                        setAmount(value);
+                                    }
+                                }}
                                 placeholder="0.00"
-                                step="0.01"
                                 className="w-full p-4 pl-10 bg-secondary/30 rounded-2xl text-2xl font-bold placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                             />
                         </div>

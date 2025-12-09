@@ -23,6 +23,7 @@ interface ExpenseContextType {
     updateExpense: (expense: Expense) => Promise<void>;
     deleteExpense: (expenseId: string) => Promise<void>;
     clearExpenses: () => void;
+    refreshExpenses: () => Promise<void>;
     isLoading: boolean;
     participants: string[];
 }
@@ -361,6 +362,15 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     const addExpense = async (newExpense: Omit<Expense, "id" | "date" | "group_id">) => {
         if (!groupId) return;
 
+        console.log('🔵 [ADD EXPENSE] Starting...', {
+            type: newExpense.type,
+            description: newExpense.description,
+            amount: newExpense.amount,
+            payer: newExpense.payer,
+            recipient: newExpense.recipient,
+            groupId
+        });
+
         logger.userAction('Add Expense', {
             description: newExpense.description,
             amount: newExpense.amount,
@@ -374,10 +384,14 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
             date: new Date().toISOString(),
         };
 
+        console.log('🔵 [ADD EXPENSE] Prepared data:', expenseData);
+
         logger.dbQuery('INSERT', 'expenses', {
             group_id: groupId,
             amount: newExpense.amount
         });
+
+        console.log('🔵 [ADD EXPENSE] Sending to Supabase...');
 
         const { data, error } = await supabase
             .from('expenses')
@@ -386,6 +400,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
             .single();
 
         if (error) {
+            console.error('❌ [ADD EXPENSE] Error:', error);
             logger.error('Error adding expense', error);
             return;
         }
@@ -395,6 +410,13 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
                 ...data,
                 amount: Number(data.amount)
             } as Expense;
+
+            console.log('✅ [ADD EXPENSE] Success:', {
+                id: createdExpense.id,
+                type: createdExpense.type,
+                amount: createdExpense.amount,
+                recipient: createdExpense.recipient
+            });
 
             logger.info('Expense added successfully', {
                 id: createdExpense.id,
@@ -561,6 +583,49 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
         };
     }, [groupId]);
 
+    const refreshExpenses = async () => {
+        if (!groupId) return;
+
+        console.log('🔄 [REFRESH] Starting refresh for group:', groupId);
+
+        setIsLoading(true);
+        try {
+            console.log('🔄 [REFRESH] Fetching expenses...');
+            // Fetch expenses
+            const { data: expensesData, error: expensesError } = await supabase
+                .from('expenses')
+                .select('*')
+                .eq('group_id', groupId)
+                .order('date', { ascending: false });
+
+            if (expensesError) {
+                console.error('❌ [REFRESH] Error fetching expenses:', expensesError);
+            } else if (expensesData) {
+                console.log('✅ [REFRESH] Fetched expenses:', expensesData.length);
+                setExpenses(expensesData.map(parseExpense));
+            }
+
+            console.log('🔄 [REFRESH] Fetching group members...');
+            // Fetch group members
+            const { data: membersData, error: membersError } = await supabase
+                .from('group_members')
+                .select('user_id, users(display_name)')
+                .eq('group_id', groupId);
+
+            if (membersError) {
+                console.error('❌ [REFRESH] Error fetching members:', membersError);
+            } else if (membersData) {
+                const members = membersData.map((m: any) => m.users?.display_name || m.user_id);
+                console.log('✅ [REFRESH] Fetched members:', members);
+                setGroupMembers(members);
+            }
+
+            console.log('✅ [REFRESH] Refresh complete');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const clearExpenses = () => {
         setCurrentUser(null);
         setDisplayNameState(null);
@@ -572,7 +637,7 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <ExpenseContext.Provider value={{ expenses, groups, currentUser, displayName, groupId, login, updateDisplayName, joinGroup, leaveGroup, removeFromGroup, createGroup, updateGroup, deleteGroup, addExpense, updateExpense, deleteExpense, clearExpenses, isLoading, participants }}>
+        <ExpenseContext.Provider value={{ expenses, groups, currentUser, displayName, groupId, login, updateDisplayName, joinGroup, leaveGroup, removeFromGroup, createGroup, updateGroup, deleteGroup, addExpense, updateExpense, deleteExpense, clearExpenses, refreshExpenses, isLoading, participants }}>
             {children}
         </ExpenseContext.Provider>
     );

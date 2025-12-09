@@ -50,7 +50,11 @@ alter table public.expenses add column if not exists splits jsonb;
 -- For currency support
 alter table public.expenses add column if not exists currency text default 'USD';
 
+-- For payment tracking (recipient of payment)
+alter table public.expenses add column if not exists recipient text;
+
 -- For recurring expenses
 alter table public.expenses add column if not exists is_recurring boolean default false;
 alter table public.expenses add column if not exists recurrence_pattern text; -- 'daily', 'weekly', 'monthly', 'yearly'
 alter table public.expenses add column if not exists recurrence_end_date timestamp with time zone;
+

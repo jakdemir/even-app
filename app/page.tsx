@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useExpenses } from "@/contexts/ExpenseContext";
 import ExpenseCard from "@/components/ExpenseCard";
 import AddExpenseForm from "@/components/AddExpenseForm";
@@ -18,13 +18,19 @@ import { cn } from "@/lib/utils";
 import { Expense } from "@/types";
 
 export default function Home() {
-  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup, leaveGroup, displayName, updateDisplayName, participants, groups, clearExpenses } = useExpenses();
+  const { expenses, addExpense, currentUser, login, isLoading, groupId, joinGroup, leaveGroup, displayName, updateDisplayName, participants, groups, clearExpenses, refreshExpenses } = useExpenses();
   const isAuthenticated = !!currentUser;
   const [debts, setDebts] = useState<import("@/lib/debt").Debt[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [isJoiningFromInvite, setIsJoiningFromInvite] = useState(false);
+
+  // Pull-to-refresh state
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const pullStartY = useRef(0);
+  const mainRef = useRef<HTMLElement>(null);
 
   // Early detection of invite parameter - store in localStorage before auth
   useEffect(() => {
@@ -80,6 +86,66 @@ export default function Home() {
       setDebts([]);
     }
   }, [expenses, currentUser, displayName]);
+
+  // Pull-to-refresh with native event listeners (passive: false to allow preventDefault)
+  useEffect(() => {
+    if (!groupId || !mainRef.current) return;
+
+    const element = mainRef.current;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      console.log('👆 [TOUCH START] scrollTop:', scrollTop);
+      if (scrollTop === 0) {
+        pullStartY.current = e.touches[0].clientY;
+        console.log('👆 [TOUCH START] Set startY:', e.touches[0].clientY);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (pullStartY.current === 0) return;
+
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      if (scrollTop > 0) {
+        console.log('👆 [TOUCH MOVE] Scrolled down, resetting');
+        pullStartY.current = 0;
+        return;
+      }
+
+      const currentY = e.touches[0].clientY;
+      const distance = currentY - pullStartY.current;
+
+      if (distance > 0) {
+        console.log('👆 [TOUCH MOVE] Pull distance:', distance);
+        // Prevent default pull-to-refresh behavior
+        e.preventDefault();
+        setIsPulling(true);
+        setPullDistance(Math.min(distance, 100));
+      }
+    };
+
+    const handleTouchEnd = async () => {
+      console.log('👆 [TOUCH END] Pull distance:', pullDistance);
+      if (pullDistance > 60) {
+        console.log('🔄 [TOUCH END] Triggering refresh...');
+        await refreshExpenses();
+      }
+      setIsPulling(false);
+      setPullDistance(0);
+      pullStartY.current = 0;
+    };
+
+    // Add event listeners with passive: false to allow preventDefault
+    element.addEventListener('touchstart', handleTouchStart, { passive: true });
+    element.addEventListener('touchmove', handleTouchMove, { passive: false });
+    element.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      element.removeEventListener('touchstart', handleTouchStart);
+      element.removeEventListener('touchmove', handleTouchMove);
+      element.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [groupId, pullDistance, refreshExpenses]);
 
   const handleLoginSuccess = (address: string, username?: string) => {
     console.log("Login success, address:", address, "username:", username);
@@ -179,7 +245,25 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col p-4 max-w-md mx-auto pb-24">
+    <main
+      ref={mainRef}
+      className="min-h-screen flex flex-col p-4 max-w-md mx-auto pb-24"
+    >
+      {/* Pull-to-refresh indicator */}
+      {isPulling && (
+        <div
+          className="fixed top-0 left-0 right-0 flex justify-center items-center z-50 transition-all"
+          style={{
+            height: `${pullDistance}px`,
+            opacity: pullDistance / 100
+          }}
+        >
+          <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-lg">
+            {pullDistance > 60 ? '↻' : '↓'}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
         <div>
@@ -271,7 +355,7 @@ export default function Home() {
       {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <SettleUpButton
-          amount={debts.find(d => d.debtor === currentUser || d.debtor === displayName)?.amount || 0}
+          suggestedAmount={debts.find(d => d.debtor === currentUser || d.debtor === displayName)?.amount || 0}
           recipient={debts.find(d => d.debtor === currentUser || d.debtor === displayName)?.creditor || ""}
           disabled={!debts.some(d => d.debtor === currentUser || d.debtor === displayName)}
         />
