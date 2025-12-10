@@ -13,6 +13,12 @@ interface SettleUpButtonProps {
     onPaymentSuccess?: () => void;
 }
 
+// Helper function to validate Ethereum address format
+const isValidEthereumAddress = (address: string): boolean => {
+    // Check if address matches Ethereum address format: 0x followed by 40 hex characters
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+};
+
 export default function SettleUpButton({ suggestedAmount = 0, recipient, recipientName, disabled, className, onPaymentSuccess }: SettleUpButtonProps) {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,7 +32,16 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
         }
 
         if (!recipient || recipient.trim() === "") {
-            alert("No recipient selected. Please record a payment manually.");
+            console.error('❌ [SETTLE UP] No recipient wallet address available');
+            alert(`Cannot send payment: ${recipientName || 'Recipient'}'s wallet address is not available. Please ask them to verify their account or use 'Record Payment' to manually record the payment.`);
+            setIsModalOpen(false);
+            return;
+        }
+
+        // Validate wallet address format
+        if (!isValidEthereumAddress(recipient)) {
+            console.error('❌ [SETTLE UP] Invalid wallet address format:', recipient);
+            alert(`Cannot send payment: Invalid wallet address format. Please use 'Record Payment' to manually record the payment.`);
             setIsModalOpen(false);
             return;
         }
@@ -88,15 +103,19 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
         <>
             <button
                 onClick={() => {
-                    if (disabled || !recipient) {
-                        console.warn('⚠️ [SETTLE UP] Button clicked but disabled or no recipient');
+                    if (disabled) {
+                        console.warn('⚠️ [SETTLE UP] Button disabled');
+                        if (!recipient) {
+                            alert(`Cannot settle up: ${recipientName || 'Recipient'}'s wallet address is not available. Please use 'Record Payment' to manually record the payment.`);
+                        }
                         return;
                     }
+                    console.log('💰 [SETTLE UP] Opening payment modal', { recipient, recipientName });
                     setIsModalOpen(true);
                 }}
                 disabled={disabled}
                 className={cn(
-                    "flex items-center justify-center gap-2 py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-xl active:scale-95 transition-all disabled:opacity-50",
+                    "flex items-center justify-center gap-2 py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-xl active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed",
                     className
                 )}
             >

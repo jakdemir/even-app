@@ -530,18 +530,32 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
                 // Create mapping of display names to wallet addresses
                 data.forEach((m: any) => {
-                    if (m.users?.display_name && m.user_id) {
-                        walletMap[m.users.display_name] = m.user_id;
+                    const displayName = m.users?.display_name;
+                    const walletAddress = m.user_id;
+
+                    if (displayName && walletAddress) {
+                        // Validate wallet address format before adding to map
+                        if (/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+                            walletMap[displayName] = walletAddress;
+                            console.log('💼 [WALLET MAP] Added:', { displayName, wallet: walletAddress });
+                        } else {
+                            console.warn('⚠️ [WALLET MAP] Invalid wallet address format for', displayName, ':', walletAddress);
+                        }
                     }
                 });
 
                 // Also add current user if they have a display name
                 if (displayName && currentUser) {
-                    walletMap[displayName] = currentUser;
+                    if (/^0x[a-fA-F0-9]{40}$/.test(currentUser)) {
+                        walletMap[displayName] = currentUser;
+                        console.log('💼 [WALLET MAP] Added current user:', { displayName, wallet: currentUser });
+                    } else {
+                        console.warn('⚠️ [WALLET MAP] Current user has invalid wallet format:', currentUser);
+                    }
                 }
 
-                console.log('💼 [INITIAL LOAD] Created wallet mapping:', walletMap);
-                console.log('💼 [INITIAL LOAD] Current user:', { displayName, wallet: currentUser });
+                console.log('💼 [INITIAL LOAD] Final wallet mapping:', walletMap);
+                console.log('💼 [INITIAL LOAD] Total members:', members.length, 'Total wallets mapped:', Object.keys(walletMap).length);
                 setGroupMembers(members);
                 setUserWallets(walletMap);
             }
@@ -664,19 +678,33 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
                     // Create mapping of display names to wallet addresses
                     membersData.forEach((m: any) => {
-                        if (m.users?.display_name && m.user_id) {
-                            walletMap[m.users.display_name] = m.user_id;
+                        const displayName = m.users?.display_name;
+                        const walletAddress = m.user_id;
+
+                        if (displayName && walletAddress) {
+                            // Validate wallet address format before adding to map
+                            if (/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+                                walletMap[displayName] = walletAddress;
+                                console.log('💼 [REFRESH] Added to wallet map:', { displayName, wallet: walletAddress });
+                            } else {
+                                console.warn('⚠️ [REFRESH] Invalid wallet address format for', displayName, ':', walletAddress);
+                            }
                         }
                     });
 
                     // Also add current user if they have a display name
                     if (displayName && currentUser) {
-                        walletMap[displayName] = currentUser;
+                        if (/^0x[a-fA-F0-9]{40}$/.test(currentUser)) {
+                            walletMap[displayName] = currentUser;
+                            console.log('💼 [REFRESH] Added current user:', { displayName, wallet: currentUser });
+                        } else {
+                            console.warn('⚠️ [REFRESH] Current user has invalid wallet format:', currentUser);
+                        }
                     }
 
                     logger.debug('Group members loaded', { count: members.length });
-                    console.log('💼 [WALLET MAP] Created wallet mapping:', walletMap);
-                    console.log('💼 [WALLET MAP] Current user:', { displayName, wallet: currentUser });
+                    console.log('💼 [REFRESH] Final wallet mapping:', walletMap);
+                    console.log('💼 [REFRESH] Total members:', members.length, 'Total wallets mapped:', Object.keys(walletMap).length);
                     setGroupMembers(members);
                     setUserWallets(walletMap);
                 }
