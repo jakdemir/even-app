@@ -18,6 +18,13 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
         try {
             logger.userAction('Wallet Auth Started');
 
+            // Check if MiniKit is available (only works in World App)
+            if (!MiniKit.isInstalled()) {
+                setLoading(false);
+                console.error('MiniKit not available. Please open this app in World App.');
+                return;
+            }
+
             // Step 1: Get nonce from server
             logger.apiCall('/api/nonce', 'GET');
             const res = await fetch(`/api/nonce`);
@@ -84,40 +91,16 @@ export default function AuthButton({ onSuccess, className }: AuthButtonProps) {
         }
     };
 
-    // Mock users for development testing
-    const mockUsers = [
-        { address: "0x1111111111111111111111111111111111111111", name: "Alice" },
-        { address: "0x2222222222222222222222222222222222222222", name: "Bob" },
-        { address: "0x3333333333333333333333333333333333333333", name: "Charlie" },
-        { address: "0x4444444444444444444444444444444444444444", name: "Diana" },
-    ];
-
     return (
-        <div className="w-full space-y-2">
-            <button
-                onClick={handleWalletAuth}
-                disabled={loading}
-                className={cn(
-                    "w-full py-4 px-6 bg-foreground text-background font-bold rounded-2xl text-lg transition-all active:scale-95 disabled:opacity-50",
-                    className
-                )}
-            >
-                {loading ? "Authenticating..." : "Sign in with Wallet"}
-            </button>
-            {process.env.NODE_ENV === 'development' && (
-                <div className="space-y-2 pt-2">
-                    <p className="text-xs text-muted-foreground text-center">Dev Mode - Mock Users:</p>
-                    {mockUsers.map((user) => (
-                        <button
-                            key={user.address}
-                            onClick={() => onSuccess(user.address, user.name)}
-                            className="w-full py-2 px-4 text-sm bg-secondary hover:bg-secondary/80 rounded-xl transition-all"
-                        >
-                            Login as {user.name}
-                        </button>
-                    ))}
-                </div>
+        <button
+            onClick={handleWalletAuth}
+            disabled={loading}
+            className={cn(
+                "w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-xl active:scale-95 transition-all disabled:opacity-50",
+                className
             )}
-        </div>
+        >
+            {loading ? "Connecting..." : "Sign in with World ID"}
+        </button>
     );
 }

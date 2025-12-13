@@ -39,8 +39,7 @@ export default function AddExpenseForm({ onAdd, participants = [], currentUserNa
 
         // Validate amount is a valid number
         const parsedAmount = parseFloat(amount);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) {
-            alert("Please enter a valid amount greater than 0");
+        if (!amount || parseFloat(amount) <= 0) {
             return;
         }
 

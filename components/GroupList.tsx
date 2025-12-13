@@ -29,10 +29,9 @@ export default function GroupList() {
 
         const handleTouchStart = (e: TouchEvent) => {
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-            console.log('👆 [GROUPS TOUCH START] scrollTop:', scrollTop);
+            // Only start pull-to-refresh if we're at the top
             if (scrollTop === 0) {
                 pullStartY.current = e.touches[0].clientY;
-                console.log('👆 [GROUPS TOUCH START] Set startY:', e.touches[0].clientY);
             }
         };
 
@@ -41,7 +40,7 @@ export default function GroupList() {
 
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
             if (scrollTop > 0) {
-                console.log('👆 [GROUPS TOUCH MOVE] Scrolled down, resetting');
+
                 pullStartY.current = 0;
                 return;
             }
@@ -50,7 +49,7 @@ export default function GroupList() {
             const distance = currentY - pullStartY.current;
 
             if (distance > 0) {
-                console.log('👆 [GROUPS TOUCH MOVE] Pull distance:', distance);
+
                 e.preventDefault();
                 setIsPulling(true);
                 setPullDistance(Math.min(distance, 100));
@@ -58,9 +57,7 @@ export default function GroupList() {
         };
 
         const handleTouchEnd = async () => {
-            console.log('👆 [GROUPS TOUCH END] Pull distance:', pullDistance);
-            if (pullDistance > 60) {
-                console.log('🔄 [GROUPS TOUCH END] Triggering refresh...');
+            if (pullDistance > 80) {
                 await refreshGroups();
             }
             setIsPulling(false);
@@ -108,7 +105,7 @@ export default function GroupList() {
             setLeaveConfirm(null);
         } catch (error) {
             console.error("Error leaving group:", error);
-            alert("Failed to leave group. Please try again.");
+            console.error("Failed to leave group");
         } finally {
             setIsLeaving(false);
         }

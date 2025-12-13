@@ -14,7 +14,7 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
     const handleShare = async () => {
         const shareText = `Join my expense group on Even! Use this Group ID: ${groupId}`;
 
-        console.log("Attempting to share group ID:", groupId);
+
 
         // Try native share first (works great on mobile)
         if (navigator.share) {
@@ -23,17 +23,17 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
                     title: 'Join my Even Group',
                     text: shareText,
                 });
-                console.log("Native share successful");
+
                 return;
             } catch (err) {
-                console.log("Share cancelled or failed, falling back to clipboard", err);
+
             }
         }
 
         // Fallback to clipboard - copy just the group ID
         try {
             await navigator.clipboard.writeText(groupId);
-            console.log("Group ID copied to clipboard");
+
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
@@ -49,7 +49,7 @@ export default function ShareButton({ groupId, className }: ShareButtonProps) {
                 setTimeout(() => setCopied(false), 2000);
             } catch (e) {
                 console.error("Fallback copy failed", e);
-                alert(`Group ID: ${groupId}`);
+                // Group ID copied to clipboard
             }
             document.body.removeChild(textArea);
         }

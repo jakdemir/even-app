@@ -481,7 +481,6 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
 
         if (error) {
             console.error('Error deleting expense:', error);
-            alert(`Failed to delete expense: ${error.message}`);
             return;
         }
 

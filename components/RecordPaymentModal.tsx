@@ -23,8 +23,7 @@ export default function RecordPaymentModal({ isOpen, onClose, onRecord, particip
 
         // Validate amount is a valid number
         const parsedAmount = parseFloat(amount);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) {
-            alert("Please enter a valid amount greater than 0");
+        if (!amount || parseFloat(amount) <= 0) {
             return;
         }
 

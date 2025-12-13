@@ -372,6 +372,7 @@ export default function Home() {
               recipient={creditorWallet}
               recipientName={creditorName}
               disabled={!myDebt || !creditorWallet}
+              onPaymentSuccess={refreshExpenses}
             />
           );
         })()}
