@@ -6,7 +6,7 @@ export default function TermsOfService() {
             <div className="max-w-3xl mx-auto">
                 <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
                 <p className="text-sm text-muted-foreground mb-8">
-                    Last Updated: December 14, 2024
+                    Last Updated: December 14, 2025
                 </p>
 
                 <div className="space-y-6">
@@ -17,7 +17,9 @@ export default function TermsOfService() {
                         <p className="text-foreground/90">
                             By accessing and using Even ("the Service"), you accept and agree
                             to be bound by these Terms of Service ("Terms"). If you do not
-                            agree to these Terms, please do not use the Service.
+                            agree to these Terms, please do not use the Service. Your use of
+                            the Service constitutes your acceptance of these Terms, including
+                            all limitations of liability and disclaimers of warranties.
                         </p>
                     </section>
 
@@ -29,7 +31,9 @@ export default function TermsOfService() {
                             Even is an expense-sharing application that allows users to track
                             shared expenses, calculate debts, and settle payments using
                             cryptocurrency through the World App. The Service is provided as
-                            a Mini App within the World App ecosystem.
+                            a Mini App within the World App ecosystem. <strong>The Service is
+                                provided for informational and convenience purposes only and should
+                                not be relied upon as the sole basis for financial decisions.</strong>
                         </p>
                     </section>
 
@@ -97,27 +101,37 @@ export default function TermsOfService() {
                                 <h3 className="font-medium mb-2">5.1 Accuracy</h3>
                                 <p className="text-foreground/90">
                                     Even provides tools to track and calculate shared expenses.
-                                    While we strive for accuracy, you are responsible for
-                                    verifying all calculations and expense records. We are not
-                                    liable for errors in expense tracking or debt calculations.
+                                    <strong>WE MAKE NO REPRESENTATIONS OR WARRANTIES REGARDING THE
+                                        ACCURACY, COMPLETENESS, OR RELIABILITY OF ANY CALCULATIONS.</strong>
+                                    You are solely responsible for verifying all calculations and
+                                    expense records. We are not liable for any errors, omissions,
+                                    or inaccuracies in expense tracking, debt calculations, or any
+                                    financial losses resulting therefrom.
                                 </p>
                             </div>
                             <div>
                                 <h3 className="font-medium mb-2">5.2 Settlements</h3>
                                 <p className="text-foreground/90">
                                     Even facilitates settlement tracking and provides integration
-                                    with cryptocurrency payments. However, we do not guarantee
-                                    that users will fulfill their payment obligations. Disputes
-                                    between users must be resolved independently.
+                                    with cryptocurrency payments. <strong>WE DO NOT GUARANTEE THAT
+                                        USERS WILL FULFILL THEIR PAYMENT OBLIGATIONS.</strong> We are not
+                                    a party to any agreements between users. All disputes between
+                                    users must be resolved independently. We have no obligation to
+                                    mediate, arbitrate, or otherwise resolve disputes, and we
+                                    expressly disclaim any liability for unpaid debts or failed
+                                    settlements.
                                 </p>
                             </div>
                             <div>
                                 <h3 className="font-medium mb-2">5.3 Payment Processing</h3>
                                 <p className="text-foreground/90">
                                     Cryptocurrency payments are processed through the World App
-                                    and are subject to blockchain transaction fees and
-                                    confirmation times. We are not responsible for failed
-                                    transactions, network fees, or delays.
+                                    and are subject to blockchain transaction fees, confirmation
+                                    times, and network congestion. <strong>WE ARE NOT RESPONSIBLE FOR
+                                        FAILED TRANSACTIONS, NETWORK FEES, DELAYS, LOST FUNDS, OR ANY
+                                        OTHER ISSUES RELATED TO CRYPTOCURRENCY TRANSACTIONS.</strong> You
+                                    acknowledge that cryptocurrency transactions are irreversible
+                                    and assume all risks associated with such transactions.
                                 </p>
                             </div>
                         </div>
@@ -144,34 +158,46 @@ export default function TermsOfService() {
                                 <h3 className="font-medium mb-2">7.1 Service Availability</h3>
                                 <p className="text-foreground/90">
                                     We provide the Service on an "as is" and "as available"
-                                    basis. We do not guarantee that the Service will be
-                                    uninterrupted, secure, or error-free. We reserve the right to
-                                    modify, suspend, or discontinue the Service at any time
-                                    without notice.
+                                    basis <strong>WITHOUT ANY WARRANTIES OF ANY KIND, EXPRESS OR
+                                        IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
+                                        MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR
+                                        NON-INFRINGEMENT.</strong> We do not guarantee that the Service
+                                    will be uninterrupted, secure, error-free, or free from viruses
+                                    or other harmful components. We reserve the right to modify,
+                                    suspend, or discontinue the Service at any time without notice
+                                    or liability.
                                 </p>
                             </div>
                             <div>
                                 <h3 className="font-medium mb-2">7.2 Damages</h3>
                                 <p className="text-foreground/90">
-                                    To the maximum extent permitted by law, Even and its
-                                    operators shall not be liable for any indirect, incidental,
-                                    special, consequential, or punitive damages, including loss of
-                                    profits, data, or other intangible losses resulting from:
+                                    <strong>TO THE MAXIMUM EXTENT PERMITTED BY LAW, EVEN AND ITS
+                                        OPERATORS, AFFILIATES, EMPLOYEES, AND AGENTS SHALL NOT BE LIABLE
+                                        FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR
+                                        PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS,
+                                        DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES RESULTING FROM:</strong>
                                 </p>
                                 <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-foreground/90">
                                     <li>Your use or inability to use the Service</li>
-                                    <li>Errors or inaccuracies in expense calculations</li>
-                                    <li>Unauthorized access to your data</li>
-                                    <li>Disputes with other users</li>
-                                    <li>Failed or delayed cryptocurrency transactions</li>
+                                    <li>Any errors, mistakes, or inaccuracies in expense calculations</li>
+                                    <li>Unauthorized access to your data or account</li>
+                                    <li>Any interruption or cessation of the Service</li>
+                                    <li>Disputes with other users or unpaid debts</li>
+                                    <li>Failed, delayed, or incorrect cryptocurrency transactions</li>
+                                    <li>Loss of funds due to user error or technical issues</li>
+                                    <li>Any bugs, viruses, or malicious code</li>
+                                    <li>Any third-party content or conduct</li>
+                                    <li>Any other matter relating to the Service</li>
                                 </ul>
                             </div>
                             <div>
                                 <h3 className="font-medium mb-2">7.3 Maximum Liability</h3>
                                 <p className="text-foreground/90">
-                                    Our total liability to you for any claims arising from your
-                                    use of the Service shall not exceed the amount you paid to us
-                                    in the past 12 months (which is $0 for a free service).
+                                    <strong>IN NO EVENT SHALL OUR TOTAL LIABILITY TO YOU FOR ANY
+                                        CLAIMS ARISING FROM YOUR USE OF THE SERVICE EXCEED THE AMOUNT
+                                        YOU PAID TO US IN THE PAST 12 MONTHS, WHICH IS $0 USD FOR A
+                                        FREE SERVICE.</strong> This limitation applies regardless of the
+                                    legal theory upon which the claim is based.
                                 </p>
                             </div>
                         </div>
@@ -180,11 +206,15 @@ export default function TermsOfService() {
                     <section>
                         <h2 className="text-xl font-semibold mb-3">8. Indemnification</h2>
                         <p className="text-foreground/90">
-                            You agree to indemnify and hold harmless Even and its operators
-                            from any claims, damages, losses, liabilities, and expenses
-                            (including legal fees) arising from your use of the Service, your
-                            violation of these Terms, or your violation of any rights of
-                            another user.
+                            <strong>You agree to indemnify, defend, and hold harmless Even and
+                                its operators, affiliates, employees, agents, and licensors from
+                                any and all claims, demands, damages, losses, liabilities, costs,
+                                and expenses (including reasonable attorney's fees)</strong> arising
+                            from or relating to: (a) your use of the Service; (b) your violation
+                            of these Terms; (c) your violation of any rights of another user or
+                            third party; (d) any disputes between you and other users; (e) any
+                            inaccurate or fraudulent information you provide; or (f) your
+                            violation of any applicable laws or regulations.
                         </p>
                     </section>
 
@@ -220,19 +250,51 @@ export default function TermsOfService() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-semibold mb-3">10. Termination</h2>
+                        <h2 className="text-xl font-semibold mb-3">
+                            10. Class Action Waiver and Arbitration
+                        </h2>
+                        <div className="space-y-3">
+                            <div>
+                                <h3 className="font-medium mb-2">10.1 Class Action Waiver</h3>
+                                <p className="text-foreground/90">
+                                    <strong>YOU AGREE THAT ANY DISPUTE RESOLUTION PROCEEDINGS WILL
+                                        BE CONDUCTED ONLY ON AN INDIVIDUAL BASIS AND NOT IN A CLASS,
+                                        CONSOLIDATED, OR REPRESENTATIVE ACTION.</strong> You waive any
+                                    right to participate in a class action lawsuit or class-wide
+                                    arbitration against Even.
+                                </p>
+                            </div>
+                            <div>
+                                <h3 className="font-medium mb-2">10.2 Binding Arbitration</h3>
+                                <p className="text-foreground/90">
+                                    Any dispute, claim, or controversy arising out of or relating
+                                    to these Terms or your use of the Service shall be settled by
+                                    binding arbitration, rather than in court, except that you may
+                                    assert claims in small claims court if your claims qualify. The
+                                    arbitration shall be conducted in accordance with applicable
+                                    arbitration rules. <strong>YOU WAIVE YOUR RIGHT TO A JURY
+                                        TRIAL.</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-semibold mb-3">11. Termination</h2>
                         <p className="text-foreground/90">
                             We reserve the right to suspend or terminate your access to the
                             Service at any time, with or without cause, and with or without
                             notice. You may also terminate your account at any time by
                             contacting us. Upon termination, your right to use the Service
-                            will immediately cease.
+                            will immediately cease. <strong>We shall not be liable to you or
+                                any third party for any termination of your access to the
+                                Service.</strong>
                         </p>
                     </section>
 
                     <section>
                         <h2 className="text-xl font-semibold mb-3">
-                            11. Changes to Terms
+                            12. Changes to Terms
                         </h2>
                         <p className="text-foreground/90">
                             We may modify these Terms at any time. We will notify users of
@@ -243,7 +305,7 @@ export default function TermsOfService() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-semibold mb-3">12. Governing Law</h2>
+                        <h2 className="text-xl font-semibold mb-3">13. Governing Law</h2>
                         <p className="text-foreground/90">
                             These Terms shall be governed by and construed in accordance with
                             applicable international laws. Any legal action or proceeding
@@ -253,7 +315,7 @@ export default function TermsOfService() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-semibold mb-3">13. Severability</h2>
+                        <h2 className="text-xl font-semibold mb-3">14. Severability</h2>
                         <p className="text-foreground/90">
                             If any provision of these Terms is found to be invalid or
                             unenforceable, the remaining provisions shall continue in full
@@ -262,7 +324,7 @@ export default function TermsOfService() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-semibold mb-3">14. Contact</h2>
+                        <h2 className="text-xl font-semibold mb-3">15. Contact</h2>
                         <p className="text-foreground/90">
                             If you have any questions about these Terms, please contact us at:
                         </p>
