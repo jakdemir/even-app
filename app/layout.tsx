@@ -14,10 +14,13 @@ export const metadata: Metadata = {
   description: "Split bills and track shared expenses effortlessly with your friends on World App. Settle up instantly using crypto.",
   keywords: ["expense sharing", "split bills", "World App", "crypto payments", "group expenses", "USDC", "WLD"],
   authors: [{ name: "Even App" }],
+  metadataBase: new URL("https://even-app.com"),
   openGraph: {
     title: "Even - Split Expenses with Friends",
     description: "Split bills and track shared expenses effortlessly with your friends on World App. Settle up instantly using crypto.",
     type: "website",
+    url: "https://even-app.com",
+    siteName: "Even",
     images: [
       {
         url: "/og-image.png",
