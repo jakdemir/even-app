@@ -10,8 +10,29 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Even - Expense Sharing",
-  description: "Split expenses easily with World App",
+  title: "Even - Split Expenses with Friends",
+  description: "Split bills and track shared expenses effortlessly with your friends on World App. Settle up instantly using crypto.",
+  keywords: ["expense sharing", "split bills", "World App", "crypto payments", "group expenses", "USDC", "WLD"],
+  authors: [{ name: "Even App" }],
+  openGraph: {
+    title: "Even - Split Expenses with Friends",
+    description: "Split bills and track shared expenses effortlessly with your friends on World App. Settle up instantly using crypto.",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 600,
+        alt: "Even - Expense Sharing App"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Even - Split Expenses with Friends",
+    description: "Split bills and track shared expenses effortlessly with your friends on World App.",
+    images: ["/og-image.png"]
+  }
 };
 
 export default function RootLayout({

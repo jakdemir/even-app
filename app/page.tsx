@@ -13,6 +13,7 @@ import ShareButton from "@/components/ShareButton";
 import GroupSettings from "@/components/GroupSettings";
 import SpendingSummary from "@/components/SpendingSummary";
 import RecordPaymentModal from "@/components/RecordPaymentModal";
+import Footer from "@/components/Footer";
 import { calculateDebts } from "@/lib/debt";
 import { cn } from "@/lib/utils";
 import { Expense } from "@/types";
@@ -203,44 +204,50 @@ export default function Home() {
 
   if (!currentUser) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 text-center">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tighter mb-2">Even</h1>
-          <p className="text-muted-foreground">Split expenses with friends on World App.</p>
-        </div>
-        <AuthButton onSuccess={handleLoginSuccess} />
-      </main>
+      <>
+        <main className="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 text-center">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tighter mb-2">Even</h1>
+            <p className="text-muted-foreground">Split expenses with friends on World App.</p>
+          </div>
+          <AuthButton onSuccess={handleLoginSuccess} />
+        </main>
+        <Footer />
+      </>
     );
   }
 
   if (!groupId) {
     return (
-      <main className="min-h-screen flex flex-col p-6 space-y-8 max-w-md mx-auto">
-        <header className="w-full flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Even</h1>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">{displayName}</span>
-            <button
-              onClick={clearExpenses}
-              className="text-xs text-muted-foreground hover:text-primary underline"
-            >
-              Logout
-            </button>
-          </div>
-        </header>
-        {inviteError && (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-900/50">
-            <p className="text-sm text-red-600 dark:text-red-400">{inviteError}</p>
-            <button
-              onClick={() => setInviteError(null)}
-              className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 underline mt-2"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-        <GroupList />
-      </main>
+      <>
+        <main className="min-h-screen flex flex-col p-6 space-y-8 max-w-md mx-auto">
+          <header className="w-full flex items-center justify-between">
+            <h1 className="text-2xl font-bold tracking-tight">Even</h1>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">{displayName}</span>
+              <button
+                onClick={clearExpenses}
+                className="text-xs text-muted-foreground hover:text-primary underline"
+              >
+                Logout
+              </button>
+            </div>
+          </header>
+          {inviteError && (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-900/50">
+              <p className="text-sm text-red-600 dark:text-red-400">{inviteError}</p>
+              <button
+                onClick={() => setInviteError(null)}
+                className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 underline mt-2"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+          <GroupList />
+        </main>
+        <Footer />
+      </>
     );
   }
 
