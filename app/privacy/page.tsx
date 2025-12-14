@@ -141,10 +141,10 @@ export default function PrivacyPolicy() {
                         <p className="text-foreground/90 mt-3">
                             To exercise these rights, please contact us at{" "}
                             <a
-                                href="mailto:even-app@proton.me"
+                                href="mailto:support@even-app.com"
                                 className="text-primary hover:underline"
                             >
-                                even-app@proton.me
+                                support@even-app.com
                             </a>
                         </p>
                     </section>
@@ -203,10 +203,10 @@ export default function PrivacyPolicy() {
                         </p>
                         <p className="mt-2">
                             <a
-                                href="mailto:even-app@proton.me"
+                                href="mailto:support@even-app.com"
                                 className="text-primary hover:underline font-medium"
                             >
-                                even-app@proton.me
+                                support@even-app.com
                             </a>
                         </p>
                     </section>
