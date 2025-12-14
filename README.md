@@ -82,4 +82,4 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Support
 
-For questions, issues, or support, please contact us at: **even-app@proton.me**
+For questions, issues, or support, please contact us at: **support@even-app.com**

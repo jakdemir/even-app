@@ -10,10 +10,10 @@ export default function Footer() {
                         <span>© 2024 Even</span>
                         <span className="hidden sm:inline">•</span>
                         <a
-                            href="mailto:even-app@proton.me"
+                            href="mailto:support@even-app.com"
                             className="hover:text-foreground transition-colors"
                         >
-                            even-app@proton.me
+                            support@even-app.com
                         </a>
                     </div>
                     <div className="flex items-center gap-4">

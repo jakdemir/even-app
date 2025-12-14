@@ -276,4 +276,4 @@ Once all tests pass:
 
 ## Contact
 
-For questions about testing, contact: **even-app@proton.me**
+For questions about testing, contact: **support@even-app.com**

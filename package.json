@@ -4,7 +4,7 @@
   "private": true,
   "author": {
     "name": "Even App",
-    "email": "even-app@proton.me"
+    "email": "support@even-app.com"
   },
   "scripts": {
     "dev": "next dev",

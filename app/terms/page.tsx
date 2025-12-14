@@ -208,10 +208,10 @@ export default function TermsOfService() {
                                     Any disputes arising from these Terms or your use of the
                                     Service should first be addressed by contacting us at{" "}
                                     <a
-                                        href="mailto:even-app@proton.me"
+                                        href="mailto:support@even-app.com"
                                         className="text-primary hover:underline"
                                     >
-                                        even-app@proton.me
+                                        support@even-app.com
                                     </a>
                                     . We will attempt to resolve disputes in good faith.
                                 </p>
@@ -268,10 +268,10 @@ export default function TermsOfService() {
                         </p>
                         <p className="mt-2">
                             <a
-                                href="mailto:even-app@proton.me"
+                                href="mailto:support@even-app.com"
                                 className="text-primary hover:underline font-medium"
                             >
-                                even-app@proton.me
+                                support@even-app.com
                             </a>
                         </p>
                     </section>

@@ -225,4 +225,4 @@ To verify RLS is working correctly:
 
 ## Contact
 
-If you have questions about RLS setup, contact: **even-app@proton.me**
+If you have questions about RLS setup, contact: **support@even-app.com**

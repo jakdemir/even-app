@@ -214,7 +214,7 @@
 ### Required Documents
 - [ ] Privacy Policy (link in app footer)
 - [ ] Terms of Service (link in app footer)
-- [x] Contact email for support: even-app@proton.me
+- [x] Contact email for support: support@even-app.com
 - [ ] GDPR compliance (if targeting EU users)
 
 ### Content Review
@@ -291,7 +291,7 @@
 - [ ] Category
 - [ ] Privacy Policy URL
 - [ ] Terms of Service URL
-- [x] Support email: even-app@proton.me
+- [x] Support email: support@even-app.com
 - [ ] App URL (production deployment)
 
 ### Technical Requirements
