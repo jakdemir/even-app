@@ -1,0 +1,11 @@
+Landing page removed. App now opens directly to main interface for faster access. Users can immediately start tracking expenses and making payments after authentication.
+
+Key improvements:
+- Streamlined onboarding flow
+- Direct access to core features
+- Improved user experience
+- WLD payment system with real-time price conversion
+- Group expense tracking and settlement
+- In-app feedback system
+
+All features tested and production ready.
