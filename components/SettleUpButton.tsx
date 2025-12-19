@@ -30,18 +30,33 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
 
     // Update WLD amount when USD amount changes
     useEffect(() => {
-        const updateWLDAmount = async () => {
-            const parsedAmount = parseFloat(amount);
-            if (!isNaN(parsedAmount) && parsedAmount > 0) {
+        // Don't fetch if modal isn't open or amount is invalid
+        if (!isModalOpen || !amount) {
+            return;
+        }
+
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            setWldAmount(0);
+            return;
+        }
+
+        // Debounce the API call
+        const timeoutId = setTimeout(async () => {
+            try {
                 const { wldAmount: converted, exchangeRate: rate } = await convertUSDtoWLD(parsedAmount);
                 setWldAmount(converted);
                 setExchangeRate(rate);
-            } else {
-                setWldAmount(0);
+            } catch (error) {
+                console.error('Error converting USD to WLD:', error);
+                // Use fallback values if API fails
+                setExchangeRate(2.00);
+                setWldAmount(parsedAmount / 2.00);
             }
-        };
-        updateWLDAmount();
-    }, [amount]);
+        }, 500); // Wait 500ms after user stops typing
+
+        return () => clearTimeout(timeoutId);
+    }, [amount, isModalOpen]);
 
     const handleOpenModal = () => {
         setIsModalOpen(true);
@@ -63,8 +78,20 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
         setLoading(true);
 
         try {
-            // Get WLD conversion
-            const { wldAmount: convertedWLD, exchangeRate: rate } = await convertUSDtoWLD(parsedAmount);
+            // Get WLD conversion with error handling
+            let convertedWLD: number;
+            let rate: number;
+
+            try {
+                const conversion = await convertUSDtoWLD(parsedAmount);
+                convertedWLD = conversion.wldAmount;
+                rate = conversion.exchangeRate;
+            } catch (conversionError) {
+                console.error('Price conversion failed, using fallback:', conversionError);
+                // Use fallback rate if API fails
+                rate = 2.00;
+                convertedWLD = parsedAmount / rate;
+            }
 
             const payload: PayCommandInput = {
                 reference: `settle-up-${Date.now()}`,
@@ -94,6 +121,7 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
             }
         } catch (error) {
             console.error("Payment failed:", error);
+            alert('Payment failed. Please try again.');
         } finally {
             setLoading(false);
         }
