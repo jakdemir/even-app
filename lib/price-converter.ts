@@ -64,13 +64,14 @@ export async function convertUSDtoWLD(usdAmount: number): Promise<{ wldAmount: n
     const exchangeRate = await fetchWLDPrice();
     const wldAmount = usdAmount / exchangeRate;
 
-    // Round to 4 decimal places for WLD (standard precision)
-    const roundedWLD = Math.round(wldAmount * 10000) / 10000;
+    // Ceil to 2 decimal places (0.01 WLD precision)
+    // This ensures we always send enough WLD while being more accurate than whole numbers
+    const ceiledWLD = Math.ceil(wldAmount * 100) / 100;
 
-    console.log(`💱 [CONVERSION] $${usdAmount} USD = ${roundedWLD} WLD (rate: $${exchangeRate}/WLD, raw: ${wldAmount.toFixed(6)})`);
+    console.log(`💱 [CONVERSION] $${usdAmount} USD = ${ceiledWLD} WLD (rate: $${exchangeRate}/WLD, raw: ${wldAmount.toFixed(6)})`);
 
     return {
-        wldAmount: roundedWLD,
+        wldAmount: ceiledWLD,
         exchangeRate
     };
 }
