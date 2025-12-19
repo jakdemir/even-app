@@ -22,12 +22,16 @@ let priceCache: PriceCache | null = null;
 export async function fetchWLDPrice(): Promise<number> {
     // Check cache first
     if (priceCache && Date.now() - priceCache.timestamp < CACHE_DURATION_MS) {
-        console.log('💰 [PRICE] Using cached WLD price:', priceCache.price);
+        if (typeof window === 'undefined') {
+            console.log('💰 [PRICE] Using cached WLD price:', priceCache.price);
+        }
         return priceCache.price;
     }
 
     try {
-        console.log('💰 [PRICE] Fetching WLD price from CoinGecko...');
+        if (typeof window === 'undefined') {
+            console.log('💰 [PRICE] Fetching WLD price from CoinGecko...');
+        }
         const response = await fetch(COINGECKO_API);
 
         if (!response.ok) {
@@ -47,10 +51,14 @@ export async function fetchWLDPrice(): Promise<number> {
             timestamp: Date.now()
         };
 
-        console.log('💰 [PRICE] Fetched WLD price:', price);
+        if (typeof window === 'undefined') {
+            console.log('💰 [PRICE] Fetched WLD price:', price);
+        }
         return price;
     } catch (error) {
-        console.error('💰 [PRICE] Error fetching WLD price, using fallback:', error);
+        if (typeof window === 'undefined') {
+            console.error('💰 [PRICE] Error fetching WLD price, using fallback:', error);
+        }
         return FALLBACK_PRICE_USD;
     }
 }
@@ -64,11 +72,14 @@ export async function convertUSDtoWLD(usdAmount: number): Promise<{ wldAmount: n
     const exchangeRate = await fetchWLDPrice();
     const wldAmount = usdAmount / exchangeRate;
 
-    // Ceil to 2 decimal places (0.01 WLD precision)
-    // This ensures we always send enough WLD while being more accurate than whole numbers
-    const ceiledWLD = Math.ceil(wldAmount * 100) / 100;
+    // Ceil to whole integer to ensure sufficient WLD payment
+    // World App payment system requires whole WLD amounts
+    const ceiledWLD = Math.ceil(wldAmount);
 
-    console.log(`💱 [CONVERSION] $${usdAmount} USD = ${ceiledWLD} WLD (rate: $${exchangeRate}/WLD, raw: ${wldAmount.toFixed(6)})`);
+    if (typeof window === 'undefined') {
+        // Server-side logging only
+        console.log(`💱 [CONVERSION] $${usdAmount} USD = ${ceiledWLD} WLD (rate: $${exchangeRate}/WLD, raw: ${wldAmount.toFixed(4)})`);
+    }
 
     return {
         wldAmount: ceiledWLD,
