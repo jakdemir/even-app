@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Even - Split Expenses with Friends",
   description: "Split bills and track shared expenses effortlessly with your friends on World App. Settle up instantly using crypto.",
-  keywords: ["expense sharing", "split bills", "World App", "crypto payments", "group expenses", "USDC", "WLD"],
+  keywords: ["expense sharing", "split bills", "World App", "crypto payments", "group expenses", "WLD"],
   authors: [{ name: "Even App" }],
   metadataBase: new URL("https://even-app.com"),
   openGraph: {

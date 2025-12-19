@@ -43,7 +43,7 @@ export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
                         "h-10 w-10 rounded-full flex items-center justify-center text-lg",
                         isPayment ? "bg-primary/10 text-primary" : "bg-background text-foreground shadow-sm"
                     )}>
-                        {isPayment ? "💸" : "🧾"}
+                        {isPayment && expense.payment_token ? "🪙" : isPayment ? "💸" : "🧾"}
                     </div>
                     <div className="flex flex-col">
                         <span className={cn("font-semibold text-sm", isPayment ? "text-primary" : "text-foreground")}>
@@ -62,6 +62,17 @@ export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
                     )}>
                         ${expense.amount.toFixed(2)}
                     </span>
+                    {/* Show WLD details for crypto payments */}
+                    {isPayment && expense.payment_token && expense.payment_token_amount && (
+                        <span className="text-xs text-primary font-medium">
+                            ≈ {expense.payment_token_amount.toFixed(4)} {expense.payment_token}
+                        </span>
+                    )}
+                    {isPayment && expense.payment_exchange_rate && (
+                        <span className="text-[10px] text-muted-foreground">
+                            at ${expense.payment_exchange_rate.toFixed(2)}/{expense.payment_token || 'WLD'}
+                        </span>
+                    )}
                     <div className="flex flex-col items-end">
                         <span className="text-[10px] text-muted-foreground font-medium">
                             Recorded by {expense.payer}

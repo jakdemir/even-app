@@ -3,6 +3,7 @@
 import { MiniKit, PayCommandInput, Tokens, type ResponseEvent } from "@worldcoin/minikit-js";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { convertUSDtoWLD } from "@/lib/price-converter";
 
 interface SettleUpButtonProps {
     suggestedAmount?: number;
@@ -10,14 +11,15 @@ interface SettleUpButtonProps {
     recipientName?: string;
     disabled?: boolean;
     className?: string;
-    onPaymentSuccess?: () => void;
+    onPaymentSuccess?: (metadata?: { wldAmount: number; exchangeRate: number; token: string }) => void;
 }
 
 export default function SettleUpButton({ suggestedAmount = 0, recipient, recipientName, disabled, className, onPaymentSuccess }: SettleUpButtonProps) {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [amount, setAmount] = useState("");
-    const [selectedToken, setSelectedToken] = useState<typeof Tokens.WLD | typeof Tokens.USDC>(Tokens.USDC);
+    const [wldAmount, setWldAmount] = useState<number>(0);
+    const [exchangeRate, setExchangeRate] = useState<number>(2.00);
 
     // Set amount when suggestedAmount changes
     useEffect(() => {
@@ -25,6 +27,21 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
             setAmount(suggestedAmount.toFixed(2));
         }
     }, [suggestedAmount]);
+
+    // Update WLD amount when USD amount changes
+    useEffect(() => {
+        const updateWLDAmount = async () => {
+            const parsedAmount = parseFloat(amount);
+            if (!isNaN(parsedAmount) && parsedAmount > 0) {
+                const { wldAmount: converted, exchangeRate: rate } = await convertUSDtoWLD(parsedAmount);
+                setWldAmount(converted);
+                setExchangeRate(rate);
+            } else {
+                setWldAmount(0);
+            }
+        };
+        updateWLDAmount();
+    }, [amount]);
 
     const handleOpenModal = () => {
         setIsModalOpen(true);
@@ -46,24 +63,33 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
         setLoading(true);
 
         try {
+            // Get WLD conversion
+            const { wldAmount: convertedWLD, exchangeRate: rate } = await convertUSDtoWLD(parsedAmount);
+
             const payload: PayCommandInput = {
                 reference: `settle-up-${Date.now()}`,
                 to: recipient,
                 tokens: [
                     {
-                        symbol: selectedToken,
-                        token_amount: parsedAmount.toString(),
+                        symbol: Tokens.WLD,
+                        token_amount: convertedWLD.toString(),
                     },
                 ],
                 description: `Settle up${recipientName ? ` to ${recipientName}` : ''}`,
             };
+
+            console.log('💸 [SETTLE UP] Payment payload:', payload);
 
             const result = await MiniKit.commandsAsync.pay(payload);
 
             if (result.finalPayload.status === "success") {
                 setIsModalOpen(false);
                 if (onPaymentSuccess) {
-                    onPaymentSuccess();
+                    onPaymentSuccess({
+                        wldAmount: convertedWLD,
+                        exchangeRate: rate,
+                        token: 'WLD'
+                    });
                 }
             }
         } catch (error) {
@@ -124,35 +150,15 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
                                 </p>
                             </div>
 
-                            {/* Token Selection */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold uppercase text-muted-foreground">Pay with</label>
-                                <div className="flex gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedToken(Tokens.WLD)}
-                                        className={cn(
-                                            "flex-1 py-3 rounded-xl font-medium transition-all",
-                                            selectedToken === Tokens.WLD
-                                                ? "bg-primary text-primary-foreground shadow-md"
-                                                : "bg-secondary hover:bg-secondary/80"
-                                        )}
-                                    >
-                                        WLD
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedToken(Tokens.USDC)}
-                                        className={cn(
-                                            "flex-1 py-3 rounded-xl font-medium transition-all",
-                                            selectedToken === Tokens.USDC
-                                                ? "bg-primary text-primary-foreground shadow-md"
-                                                : "bg-secondary hover:bg-secondary/80"
-                                        )}
-                                    >
-                                        USDC
-                                    </button>
-                                </div>
+                            {/* WLD Conversion Display */}
+                            <div className="p-3 bg-primary/5 rounded-xl border border-primary/20">
+                                <p className="text-xs text-muted-foreground mb-1">You will pay</p>
+                                <p className="font-bold text-lg text-primary">
+                                    ≈ {wldAmount.toFixed(4)} WLD
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    at ${exchangeRate.toFixed(2)} per WLD
+                                </p>
                             </div>
 
                             {/* Recipient */}
@@ -172,7 +178,7 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
                                 disabled={loading || !amount || parseFloat(amount) < 0.1}
                                 className="w-full py-4 bg-primary text-primary-foreground font-bold text-lg rounded-2xl shadow-lg active:scale-95 transition-all disabled:opacity-50"
                             >
-                                {loading ? "Processing..." : `Send $${amount || "0"} ${selectedToken}`}
+                                {loading ? "Processing..." : `Send $${amount || "0"} (${wldAmount.toFixed(4)} WLD)`}
                             </button>
                         </div>
                     </div>

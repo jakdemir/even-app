@@ -171,12 +171,22 @@ export default function Home() {
     addExpense({ ...expense, payer, splits });
   };
 
-  const handleRecordPayment = (payment: Omit<Expense, "id" | "date" | "group_id">) => {
+  const handleRecordPayment = (payment: Omit<Expense, "id" | "date" | "group_id">, cryptoMetadata?: { wldAmount: number; exchangeRate: number; token: string }) => {
     // Normalize payer/recipient if "Me" is selected
     const payer = payment.payer === "Me" && displayName ? displayName : (payment.payer === "Me" ? (currentUser || "Me") : payment.payer);
     const recipient = payment.recipient === "Me" && displayName ? displayName : (payment.recipient === "Me" ? (currentUser || "Me") : payment.recipient);
 
-    addExpense({ ...payment, payer, recipient });
+    // Include crypto payment metadata if provided
+    const paymentData = cryptoMetadata ? {
+      ...payment,
+      payer,
+      recipient,
+      payment_token: cryptoMetadata.token,
+      payment_token_amount: cryptoMetadata.wldAmount,
+      payment_exchange_rate: cryptoMetadata.exchangeRate
+    } : { ...payment, payer, recipient };
+
+    addExpense(paymentData);
     setIsPaymentModalOpen(false);
   };
 
@@ -379,7 +389,19 @@ export default function Home() {
               recipient={creditorWallet}
               recipientName={creditorName}
               disabled={!myDebt || !creditorWallet}
-              onPaymentSuccess={refreshExpenses}
+              onPaymentSuccess={(metadata) => {
+                // Record the payment with crypto metadata
+                if (metadata && myDebt) {
+                  handleRecordPayment({
+                    description: `Payment to ${creditorName}`,
+                    amount: myDebt.amount,
+                    payer: displayName || currentUser || '',
+                    recipient: creditorName,
+                    type: 'payment'
+                  }, metadata);
+                }
+                refreshExpenses();
+              }}
             />
           );
         })()}

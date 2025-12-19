@@ -109,7 +109,7 @@ export default function LandingPage() {
                             <div className="text-4xl mb-4">💰</div>
                             <h3 className="text-xl font-semibold mb-3">Crypto Payments</h3>
                             <p className="text-muted-foreground">
-                                Settle up instantly with USDC or WLD using your World App wallet. No bank transfers needed.
+                                Settle up instantly with WLD using your World App wallet. Automatic USD to WLD conversion at market rates.
                             </p>
                         </div>
 
