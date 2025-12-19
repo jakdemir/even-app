@@ -46,6 +46,7 @@ export default function AddExpenseForm({ onAdd, participants = [], currentUserNa
         const expenseData: Omit<Expense, "id" | "date" | "group_id"> = {
             description,
             amount: parsedAmount,
+            amount_usd: parsedAmount, // Store USD amount
             payer,
             type: initialData?.type || 'expense',
             split_type: splitType,
