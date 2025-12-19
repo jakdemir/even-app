@@ -49,9 +49,10 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
                 setExchangeRate(rate);
             } catch (error) {
                 console.error('Error converting USD to WLD:', error);
-                // Use fallback values if API fails
-                setExchangeRate(2.00);
-                setWldAmount(parsedAmount / 2.00);
+                // DO NOT use fallback - show error to user
+                setWldAmount(0);
+                setExchangeRate(0);
+                alert('Unable to fetch current WLD price. Please check your connection and try again.');
             }
         }, 500); // Wait 500ms after user stops typing
 
@@ -78,7 +79,7 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
         setLoading(true);
 
         try {
-            // Get WLD conversion with error handling
+            // Get WLD conversion - MUST succeed, no fallback for financial transactions
             let convertedWLD: number;
             let rate: number;
 
@@ -87,10 +88,11 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
                 convertedWLD = conversion.wldAmount;
                 rate = conversion.exchangeRate;
             } catch (conversionError) {
-                console.error('Price conversion failed, using fallback:', conversionError);
-                // Use fallback rate if API fails
-                rate = 2.00;
-                convertedWLD = parsedAmount / rate;
+                console.error('Price conversion failed:', conversionError);
+                // FAIL the transaction - do NOT use fallback price
+                alert('Unable to get current WLD price. Please check your connection and try again.');
+                setLoading(false);
+                return; // Exit without processing payment
             }
 
             const payload: PayCommandInput = {
