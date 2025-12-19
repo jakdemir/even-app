@@ -58,8 +58,9 @@ export function calculateDebts(expenses: Expense[], currentUser: string): Debt[]
         if (expense.type === 'payment') {
             // Direct transfer: Payer pays Recipient
             if (expense.recipient) {
-                balances[expense.payer] += expense.amount;
-                balances[expense.recipient] -= expense.amount;
+                const usdAmount = expense.amount_usd || expense.amount;
+                balances[expense.payer] += usdAmount;
+                balances[expense.recipient] -= usdAmount;
             }
         } else {
             // Shared Expense
@@ -78,7 +79,8 @@ export function calculateDebts(expenses: Expense[], currentUser: string): Debt[]
             if (numSharers === 0) return; // Skip if no sharers
 
             // Payer paid the full amount
-            balances[expense.payer] += expense.amount;
+            const usdAmount = expense.amount_usd || expense.amount;
+            balances[expense.payer] += usdAmount;
 
             // Calculate how much each sharer owes
             if (expense.split_type === 'unequal' && expense.splits) {
@@ -93,12 +95,14 @@ export function calculateDebts(expenses: Expense[], currentUser: string): Debt[]
                 sharers.forEach(sharer => {
                     const normalizedSharer = sharer === "Me" ? currentUser : sharer;
                     const percentage = expense.splits![sharer] || 0;
-                    const shareAmount = (expense.amount * percentage) / 100;
+                    const usdAmount = expense.amount_usd || expense.amount;
+                    const shareAmount = (usdAmount * percentage) / 100;
                     balances[normalizedSharer] -= shareAmount;
                 });
             } else {
                 // Equal split (default)
-                const costPerPerson = expense.amount / numSharers;
+                const usdAmount = expense.amount_usd || expense.amount;
+                const costPerPerson = usdAmount / numSharers;
                 sharers.forEach(sharer => {
                     const normalizedSharer = sharer === "Me" ? currentUser : sharer;
                     balances[normalizedSharer] -= costPerPerson;

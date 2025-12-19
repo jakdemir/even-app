@@ -15,15 +15,15 @@ export default function SpendingSummary({ expenses, currentUser, displayName, de
     const stats = useMemo(() => {
         const totalSpent = expenses
             .filter(e => e.type === 'expense')
-            .reduce((sum, e) => sum + e.amount, 0);
+            .reduce((sum, e) => sum + (e.amount_usd || e.amount), 0);
 
         const userPaid = expenses
             .filter(e => e.type === 'expense' && (e.payer === currentUser || e.payer === displayName))
-            .reduce((sum, e) => sum + e.amount, 0);
+            .reduce((sum, e) => sum + (e.amount_usd || e.amount), 0);
 
         const payments = expenses
             .filter(e => e.type === 'payment')
-            .reduce((sum, e) => sum + e.amount, 0);
+            .reduce((sum, e) => sum + (e.amount_usd || e.amount), 0);
 
         const expenseCount = expenses.filter(e => e.type === 'expense').length;
         const paymentCount = expenses.filter(e => e.type === 'payment').length;

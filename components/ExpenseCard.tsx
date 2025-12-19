@@ -60,7 +60,7 @@ export default function ExpenseCard({ expense, isMe }: ExpenseCardProps) {
                         "font-bold text-base",
                         isPayment ? "text-primary" : "text-foreground"
                     )}>
-                        ${expense.amount.toFixed(2)}
+                        ${(expense.amount_usd || expense.amount).toFixed(2)}
                     </span>
                     {/* Show WLD details for crypto payments */}
                     {isPayment && expense.payment_token && expense.payment_token_amount && (
