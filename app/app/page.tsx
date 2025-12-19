@@ -13,6 +13,7 @@ import ShareButton from "@/components/ShareButton";
 import GroupSettings from "@/components/GroupSettings";
 import SpendingSummary from "@/components/SpendingSummary";
 import RecordPaymentModal from "@/components/RecordPaymentModal";
+import FeedbackButton from "@/components/FeedbackButton";
 import Footer from "@/components/Footer";
 import { calculateDebts } from "@/lib/debt";
 import { cn } from "@/lib/utils";
@@ -438,6 +439,7 @@ export default function Home() {
         <AddExpenseForm onAdd={handleAddExpense} participants={participants} currentUserName={displayName || undefined} />
       </div>
 
+      {/* Record Payment Modal */}
       <RecordPaymentModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
@@ -445,6 +447,9 @@ export default function Home() {
         participants={participants}
         currentUserName={displayName || undefined}
       />
+
+      {/* Feedback Button */}
+      <FeedbackButton />
     </main>
   );
 }
