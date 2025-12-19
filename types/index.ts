@@ -1,21 +1,24 @@
 export interface Expense {
     id: string;
     description: string;
-    amount: number;
+    amount: number; // Legacy field - use amount_usd, amount_usdc, or amount_wld
+    amount_usd?: number; // Amount in USD
+    amount_usdc?: number; // Amount in USDC (if paid with USDC)
+    amount_wld?: number; // Amount in WLD (if paid with WLD)
     payer: string;
     date: string;
-    type: 'expense' | 'payment';
     group_id: string;
-    recipient?: string;
+    splits?: { [participant: string]: number };
     split_type?: 'equal' | 'unequal' | 'percentage';
-    splits?: Record<string, number>; // For unequal splits: { userId: amount or percentage }
     currency?: string;
+    recipient?: string;
+    type?: 'expense' | 'payment';
+    payment_token?: string; // Token used for crypto payment (e.g., "WLD")
+    payment_token_amount?: number; // Amount in crypto tokens (deprecated - use amount_wld)
+    payment_exchange_rate?: number; // Exchange rate at payment time
     is_recurring?: boolean;
     recurrence_pattern?: 'daily' | 'weekly' | 'monthly' | 'yearly';
     recurrence_end_date?: string;
-    payment_token?: string; // Token used for crypto payment (e.g., "WLD")
-    payment_token_amount?: number; // Amount in crypto tokens (e.g., 5.0000)
-    payment_exchange_rate?: number; // Exchange rate at payment time (e.g., 2.00 USD per WLD)
 }
 
 export interface Group {

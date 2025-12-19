@@ -182,10 +182,17 @@ export default function Home() {
       ...payment,
       payer,
       recipient,
+      amount_usd: payment.amount, // Store USD amount separately
+      amount_wld: cryptoMetadata.wldAmount, // Store WLD amount separately
       payment_token: cryptoMetadata.token,
-      payment_token_amount: cryptoMetadata.wldAmount,
+      payment_token_amount: cryptoMetadata.wldAmount, // Keep for backward compatibility
       payment_exchange_rate: cryptoMetadata.exchangeRate
-    } : { ...payment, payer, recipient };
+    } : {
+      ...payment,
+      payer,
+      recipient,
+      amount_usd: payment.amount // Store USD amount for non-crypto payments too
+    };
 
     addExpense(paymentData);
     setIsPaymentModalOpen(false);
