@@ -410,11 +410,16 @@ export function ExpenseProvider({ children }: { children: ReactNode }) {
             date: new Date().toISOString(),
         };
 
-        console.log('🔵 [ADD EXPENSE] Prepared data:', expenseData);
+        console.log('🔵 [ADD EXPENSE] Prepared data:', {
+            ...expenseData,
+            has_amount_usd: !!expenseData.amount_usd,
+            amount_usd_value: expenseData.amount_usd
+        });
 
         logger.dbQuery('INSERT', 'expenses', {
             group_id: groupId,
-            amount: newExpense.amount
+            amount: newExpense.amount,
+            amount_usd: newExpense.amount_usd
         });
 
         console.log('🔵 [ADD EXPENSE] Sending to Supabase...');
