@@ -11,7 +11,7 @@ interface SettleUpButtonProps {
     recipientName?: string;
     disabled?: boolean;
     className?: string;
-    onPaymentSuccess?: (metadata?: { wldAmount: number; exchangeRate: number; token: string }) => void;
+    onPaymentSuccess?: (metadata?: { wldAmount: number; exchangeRate: number; token: string; usdAmount?: number }) => void;
 }
 
 export default function SettleUpButton({ suggestedAmount = 0, recipient, recipientName, disabled, className, onPaymentSuccess }: SettleUpButtonProps) {
@@ -117,7 +117,8 @@ export default function SettleUpButton({ suggestedAmount = 0, recipient, recipie
                     onPaymentSuccess({
                         wldAmount: convertedWLD,
                         exchangeRate: rate,
-                        token: 'WLD'
+                        token: 'WLD',
+                        usdAmount: parsedAmount // Pass the actual USD amount entered
                     });
                 }
             }

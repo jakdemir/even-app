@@ -402,7 +402,7 @@ export default function Home() {
                 if (metadata && myDebt) {
                   handleRecordPayment({
                     description: `Payment to ${creditorName}`,
-                    amount: myDebt.amount,
+                    amount: metadata.usdAmount || myDebt.amount, // Use actual USD amount entered
                     payer: displayName || currentUser || '',
                     recipient: creditorName,
                     type: 'payment'
