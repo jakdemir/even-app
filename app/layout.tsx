@@ -6,6 +6,7 @@ import ErudaProvider from "@/components/ErudaProvider";
 import { ExpenseProvider } from "@/contexts/ExpenseContext";
 import { cn } from "@/lib/utils";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -51,6 +52,7 @@ export default function RootLayout({
             <ErudaProvider>
               {children}
               <SpeedInsights />
+              <Analytics />
             </ErudaProvider>
           </ExpenseProvider>
         </MiniKitProvider>
